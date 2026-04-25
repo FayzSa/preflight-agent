@@ -21,6 +21,6 @@ services:
     working_dir: /workspace
     environment:
       # API key from host environment
-      - SPRING_AI_ANTHROPIC_API_KEY=${SPRING_AI_ANTHROPIC_API_KEY:-${SPRING_AI_API_KEY:-}}
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY:-${SPRING_AI_API_KEY:-}}
     stdin_open: true
     tty: true

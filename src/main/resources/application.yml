@@ -1,14 +1,14 @@
 spring:
   ai:
-    anthropic:
-      # Set via env var: export SPRING_AI_ANTHROPIC_API_KEY="sk-ant-..."
-      # or: export SPRING_AI_API_KEY="sk-ant-..."
-      api-key: ${SPRING_AI_ANTHROPIC_API_KEY:${SPRING_AI_API_KEY:NOT_SET}}
-      chat:
-        options:
-          model: claude-3-5-sonnet-20241022
-          max-tokens: 8096
-          temperature: 0.1
+    google:
+      gemini:
+        # Set via env var: export GOOGLE_AI_API_KEY="AIza..."
+        api-key: ${GOOGLE_AI_API_KEY:${SPRING_AI_GOOGLE_GEMINI_API_KEY:NOT_SET}}
+        chat:
+          options:
+            model: gemini-2.0-flash
+            max-output-tokens: 8096
+            temperature: 0.1
 
   shell:
     interactive:
