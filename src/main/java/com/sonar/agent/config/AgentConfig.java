@@ -10,7 +10,7 @@ public class AgentConfig {
 
     /**
      * Builds the ChatClient used by the AnalyzerGraph.
-     * The ChatModel is auto-configured by spring-ai-anthropic-spring-boot-starter.
+     * The ChatModel is auto-configured by spring-ai-google-gemini-spring-boot-starter.
      */
     @Bean
     public ChatClient chatClient(ChatModel chatModel) {

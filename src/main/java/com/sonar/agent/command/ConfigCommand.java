@@ -23,18 +23,18 @@ public class ConfigCommand {
     private static final Path CONFIG_DIR  = Paths.get(System.getProperty("user.home"), ".aifix");
     private static final Path CONFIG_FILE = CONFIG_DIR.resolve("config.properties");
 
-    @ShellMethod(key = "config-set-key", value = "Store your Anthropic API key in ~/.aifix/config.properties")
+    @ShellMethod(key = "config-set-key", value = "Store your Google AI API key in ~/.aifix/config.properties")
     public String configSetApiKey(
-            @ShellOption(value = "--api-key", help = "Anthropic API key (sk-ant-...)") String apiKey
+            @ShellOption(value = "--api-key", help = "Google AI API key (AIza...)") String apiKey
     ) {
-        if (!apiKey.startsWith("sk-")) {
-            return "[33mWarning: Key does not look like an Anthropic key (expected sk-ant-...).[0m\n"
-                    + set("spring.ai.anthropic.api-key", apiKey);
+        if (!apiKey.startsWith("AIza")) {
+            return "[33mWarning: Key does not look like a Google AI key (expected AIza...).[0m\n"
+                    + set("spring.ai.google.gemini.api-key", apiKey);
         }
-        return set("spring.ai.anthropic.api-key", apiKey);
+        return set("spring.ai.google.gemini.api-key", apiKey);
     }
 
-    @ShellMethod(key = "config-set", value = "Set any configuration key (e.g. --key spring.ai.anthropic.chat.options.model --value claude-3-5-haiku-20241022)")
+    @ShellMethod(key = "config-set", value = "Set any configuration key (e.g. --key spring.ai.google.gemini.chat.options.model --value gemini-2.0-flash)")
     public String configSet(
             @ShellOption(value = "--key",   help = "Configuration property key")   String key,
             @ShellOption(value = "--value", help = "Configuration property value") String value

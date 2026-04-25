@@ -49,10 +49,10 @@
             <version>${spring-shell.version}</version>
         </dependency>
 
-        <!-- Spring AI - Anthropic Claude Integration -->
+        <!-- Spring AI - Google Gemini Integration -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-anthropic-spring-boot-starter</artifactId>
+            <artifactId>spring-ai-google-gemini-spring-boot-starter</artifactId>
         </dependency>
 
         <!-- Jackson - JSON processing for LLM responses -->

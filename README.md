@@ -11,7 +11,7 @@ A blazing-fast terminal tool that implements **Shift-Left** DevOps by scanning y
 ## How it works
 
 1. **Extract** — Runs `git diff -U5` to capture only modified lines and their context
-2. **Analyze** — Sends the diff to Claude 3.5 Sonnet wrapped in a "Senior Staff Engineer" system prompt
+2. **Analyze** — Sends the diff to Gemini 2.0 Flash wrapped in a "Senior Staff Engineer" system prompt
 3. **Format** — The LLM returns a strict JSON payload with `original_snippet` and `fixed_snippet`
 4. **Patch** — The tool locates each snippet in your local file and replaces it in-place
 
@@ -27,7 +27,7 @@ If no critical issues are found, the process exits cleanly. No noise.
 | Maven | 3.9+ |
 | Git | Any modern version |
 | GraalVM *(native image only)* | 21+ |
-| Anthropic API key | — |
+| Google AI API key | — |
 
 ---
 
@@ -36,13 +36,13 @@ If no critical issues are found, the process exits cleanly. No noise.
 ### 1. Set your API key
 
 ```bash
-export SPRING_AI_ANTHROPIC_API_KEY="sk-ant-api03-..."
+export GOOGLE_AI_API_KEY="AIza..."
 ```
 
 Or store it persistently with the built-in config command after first run:
 
 ```bash
-ai-fix config-set-key --api-key sk-ant-api03-...
+ai-fix config-set-key --api-key AIza...
 ```
 
 ### 2. Build (JVM — for development)
@@ -138,14 +138,14 @@ bash install-hook.sh
 ### `config-set-key` — Store API key
 
 ```bash
-ai-fix config-set-key --api-key sk-ant-api03-...
+ai-fix config-set-key --api-key AIza...
 ```
 
 ### `config-set` — Set any property
 
 ```bash
 # Switch to a different model
-ai-fix config-set --key spring.ai.anthropic.chat.options.model --value claude-3-5-haiku-20241022
+ai-fix config-set --key spring.ai.google.gemini.chat.options.model --value gemini-2.0-flash-lite
 ```
 
 ### `config-show` — View current config
@@ -215,7 +215,7 @@ src/main/java/com/sonar/agent/
 │   └── FileSystemTool.java          # Reads, backs up, and patches local files
 └── config/
     ├── AiConfig.java                # ObjectMapper bean
-    └── AgentConfig.java             # ChatClient bean wired to Anthropic
+    └── AgentConfig.java             # ChatClient bean wired to Google Gemini
 ```
 
 ---
@@ -227,8 +227,8 @@ src/main/java/com/sonar/agent/
 | Language | Java 21 (Virtual Threads) |
 | Framework | Spring Boot 3.3 |
 | CLI engine | Spring Shell 3.3 |
-| AI integration | Spring AI 1.0 (Anthropic) |
-| LLM | Claude 3.5 Sonnet |
+| AI integration | Spring AI 1.0 (Google Gemini) |
+| LLM | Gemini 2.0 Flash |
 | Build | Maven |
 | Native binary | GraalVM Native Image |
 

@@ -153,7 +153,7 @@ public class AnalyzeCommand {
         String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
         if (msg.contains("NOT_SET") || msg.contains("api-key") || msg.contains("401")) {
             return red("API key not configured.\n"
-                    + "  Set it with: export SPRING_AI_ANTHROPIC_API_KEY=\"sk-ant-...\"\n"
+                    + "  Set it with: export GOOGLE_AI_API_KEY=\"AIza...\"\n"
                     + "  Or run:      config-set-key --api-key <your-key>");
         }
         return red("Error: " + msg);
