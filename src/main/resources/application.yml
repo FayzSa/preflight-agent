@@ -1,0 +1,30 @@
+spring:
+  ai:
+    anthropic:
+      # Set via env var: export SPRING_AI_ANTHROPIC_API_KEY="sk-ant-..."
+      # or: export SPRING_AI_API_KEY="sk-ant-..."
+      api-key: ${SPRING_AI_ANTHROPIC_API_KEY:${SPRING_AI_API_KEY:NOT_SET}}
+      chat:
+        options:
+          model: claude-3-5-sonnet-20241022
+          max-tokens: 8096
+          temperature: 0.1
+
+  shell:
+    interactive:
+      enabled: true
+    script:
+      enabled: true
+
+  main:
+    banner-mode: off
+
+logging:
+  level:
+    com.sonar.agent: INFO
+    org.springframework.ai: WARN
+    org.springframework.shell: WARN
+
+ai-fix:
+  backup:
+    enabled: true

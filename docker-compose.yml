@@ -1,0 +1,26 @@
+version: "3.9"
+
+# Usage:
+#   docker compose run --rm ai-fix scan
+#   docker compose run --rm ai-fix fix
+#
+# The host's current directory is mounted to /workspace so the tool
+# can read local git history and write fixes back to your files.
+
+services:
+  ai-fix:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ai-fix:latest
+    volumes:
+      # Mount current project into the container's workspace
+      - .:/workspace
+      # Mount host git config so commits inside the container are attributed correctly
+      - ~/.gitconfig:/root/.gitconfig:ro
+    working_dir: /workspace
+    environment:
+      # API key from host environment
+      - SPRING_AI_ANTHROPIC_API_KEY=${SPRING_AI_ANTHROPIC_API_KEY:-${SPRING_AI_API_KEY:-}}
+    stdin_open: true
+    tty: true
