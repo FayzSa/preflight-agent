@@ -18,7 +18,7 @@
     <description>AI-Native Code Review CLI - Shift-Left DevOps tool for automated code analysis and fixing</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <spring-ai.version>1.1.3</spring-ai.version>
         <spring-shell.version>3.3.3</spring-shell.version>
     </properties>
