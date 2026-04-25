@@ -34,7 +34,7 @@ public class ConfigCommand {
         return set("spring.ai.google.gemini.api-key", apiKey);
     }
 
-    @ShellMethod(key = "config-set", value = "Set any configuration key (e.g. --key spring.ai.google.gemini.chat.options.model --value gemini-2.0-flash)")
+    @ShellMethod(key = "config-set", value = "Set any configuration key (e.g. --key spring.ai.google.gemini.chat.options.model --value gemini-2.5-flash)")
     public String configSet(
             @ShellOption(value = "--key",   help = "Configuration property key")   String key,
             @ShellOption(value = "--value", help = "Configuration property value") String value
