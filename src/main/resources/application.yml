@@ -1,9 +1,9 @@
 spring:
   ai:
     google:
-      gemini:
-        # Set via env var: export GOOGLE_AI_API_KEY="AIza..."
-        api-key: ${GOOGLE_AI_API_KEY:${SPRING_AI_GOOGLE_GEMINI_API_KEY:NOT_SET}}
+      genai:
+        # Set via env var: GOOGLE_AI_API_KEY=AIza...
+        api-key: ${GOOGLE_AI_API_KEY:${SPRING_AI_GOOGLE_GENAI_API_KEY:NOT_SET}}
         chat:
           options:
             model: gemini-2.0-flash
