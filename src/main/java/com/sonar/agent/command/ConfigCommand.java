@@ -29,12 +29,12 @@ public class ConfigCommand {
     ) {
         if (!apiKey.startsWith("AIza")) {
             return "[33mWarning: Key does not look like a Google AI key (expected AIza...).[0m\n"
-                    + set("spring.ai.google.gemini.api-key", apiKey);
+                    + set("spring.ai.google.genai.api-key", apiKey);
         }
-        return set("spring.ai.google.gemini.api-key", apiKey);
+        return set("spring.ai.google.genai.api-key", apiKey);
     }
 
-    @ShellMethod(key = "config-set", value = "Set any configuration key (e.g. --key spring.ai.google.gemini.chat.options.model --value gemini-2.5-flash)")
+    @ShellMethod(key = "config-set", value = "Set any configuration key (e.g. --key spring.ai.google.genai.chat.options.model --value gemini-2.5-flash)")
     public String configSet(
             @ShellOption(value = "--key",   help = "Configuration property key")   String key,
             @ShellOption(value = "--value", help = "Configuration property value") String value
