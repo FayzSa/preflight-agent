@@ -1,0 +1,13 @@
+spring:
+  main:
+    web-application-type: servlet
+
+server:
+  port: ${PORT:8080}
+
+ai-fix:
+  webhook:
+    # HMAC-SHA256 secret configured in GitHub webhook settings
+    secret: ${AI_FIX_WEBHOOK_SECRET:}
+    # GitHub PAT or App installation token with pull_requests:write and contents:read
+    github-token: ${AI_FIX_WEBHOOK_GITHUB_TOKEN:}

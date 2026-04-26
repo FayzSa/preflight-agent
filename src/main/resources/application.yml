@@ -26,6 +26,7 @@ spring:
 
   main:
     banner-mode: off
+    web-application-type: none   # CLI mode by default; overridden to servlet in webhook profile
 
 logging:
   level:

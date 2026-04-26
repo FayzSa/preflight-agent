@@ -234,13 +234,58 @@ src/main/java/com/sonar/agent/
 
 ---
 
+## GitHub App — Automated PR Reviews
+
+Run ai-fix as a webhook server to automatically review every pull request.
+
+### 1. Configure a GitHub webhook
+
+In your repository (or organisation), go to **Settings → Webhooks → Add webhook** and set:
+
+| Field | Value |
+|---|---|
+| Payload URL | `https://your-server/webhook` |
+| Content type | `application/json` |
+| Secret | A random string (copy it for the next step) |
+| Events | **Pull requests** |
+
+### 2. Start the server
+
+```bash
+export AI_FIX_WEBHOOK_SECRET="<the-secret-from-above>"
+export AI_FIX_WEBHOOK_GITHUB_TOKEN="ghp_..."   # PAT with pull_requests:write + contents:read
+export GOOGLE_AI_API_KEY="AIza..."
+
+java -jar target/sonar-agent-1.0.0.jar --spring.profiles.active=webhook
+```
+
+Or with Docker:
+
+```bash
+GOOGLE_AI_API_KEY=AIza... \
+AI_FIX_WEBHOOK_SECRET=mysecret \
+AI_FIX_WEBHOOK_GITHUB_TOKEN=ghp_... \
+docker compose --profile webhook up
+```
+
+### 3. What happens on each PR
+
+| Scenario | Review posted |
+|---|---|
+| No issues found | ✅ `COMMENT` — scan passed |
+| Issues found | 🔴 `REQUEST_CHANGES` — lists every issue with before/after snippets |
+
+The server accepts `opened`, `synchronize`, and `reopened` events and ignores everything else.
+
+---
+
 ## Roadmap
 
 - [x] Local CLI execution with manual triggering
 - [x] Git pre-commit hook integration
 - [x] Dynamic language detection with language-specific prompts
 - [x] Docker / docker-compose support
-- [ ] GitHub App — wrap the agent in a REST API for automated PR reviews
+- [x] GitHub App — REST API for automated PR reviews
 
 ---
 

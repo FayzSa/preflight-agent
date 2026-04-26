@@ -62,6 +62,13 @@ public class GitOperationsTool {
         }
     }
 
+    public DiffResult buildFromRawDiff(String rawDiff) {
+        if (rawDiff == null || rawDiff.isBlank()) {
+            return new DiffResult("", List.of());
+        }
+        return new DiffResult(rawDiff, parseDiff(rawDiff));
+    }
+
     public void installPreCommitHook(String repoDirectory) throws Exception {
         Path hooksDir = Paths.get(repoDirectory, ".git", "hooks");
         if (!Files.exists(hooksDir)) {

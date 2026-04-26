@@ -54,7 +54,10 @@ public class AnalyzerGraph {
         }
 
         log.info("Diff captured: {} file(s) modified", diff.fileDiffs().size());
+        return analyze(diff);
+    }
 
+    public AnalysisResponse analyze(DiffResult diff) {
         String language = detectLanguage(diff);
         String systemPrompt = buildSystemPrompt(language);
         String userMessage = buildUserMessage(diff.rawDiff());
