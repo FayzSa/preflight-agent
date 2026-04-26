@@ -1,6 +1,7 @@
 package com.sonar.agent.tools;
 
 import com.sonar.agent.agent.models.DiffResult;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -38,7 +39,6 @@ public class GitOperationsTool {
             }
 
             return new DiffResult(combinedDiff, parseDiff(combinedDiff));
-
         } catch (Exception e) {
             log.error("Failed to get git diff: {}", e.getMessage());
             throw new RuntimeException("Failed to execute git diff: " + e.getMessage(), e);
@@ -49,7 +49,7 @@ public class GitOperationsTool {
         try {
             String root = runGitCommand(directory, "git", "rev-parse", "--show-toplevel").trim();
             return Paths.get(root).toAbsolutePath().normalize()
-                    .equals(Paths.get(directory).toAbsolutePath().normalize());
+                .equals(Paths.get(directory).toAbsolutePath().normalize());
         } catch (Exception e) {
             return false;
         }
@@ -82,30 +82,30 @@ public class GitOperationsTool {
         Path hookFile = hooksDir.resolve("pre-commit");
 
         String hookContent = """
-                #!/bin/bash
-                # AI Code Review Pre-Commit Hook
-                # Installed by ai-fix (https://github.com/fayzsa/sonar_agent)
-
-                echo ""
-                echo "[ ai-fix ] Running AI security scan before commit..."
-
-                if command -v ai-fix &>/dev/null; then
-                    ai-fix fix --auto
-                    EXIT_CODE=$?
-                    if [ $EXIT_CODE -ne 0 ]; then
-                        echo ""
-                        echo "[ ai-fix ] Critical issues detected. Review and re-commit."
-                        echo "[ ai-fix ] To skip (not recommended): git commit --no-verify"
-                        exit 1
-                    fi
-                    echo "[ ai-fix ] Scan complete. Proceeding with commit."
-                else
-                    echo "[ ai-fix ] WARNING: ai-fix not found in PATH. Skipping AI review."
-                    echo "[ ai-fix ] Install: https://github.com/fayzsa/sonar_agent"
+            #!/bin/bash
+            # AI Code Review Pre-Commit Hook
+            # Installed by ai-fix (https://github.com/fayzsa/sonar_agent)
+            
+            echo ""
+            echo "[ ai-fix ] Running AI security scan before commit..."
+            
+            if command -v ai-fix &>/dev/null; then
+                ai-fix fix --auto
+                EXIT_CODE=$?
+                if [ $EXIT_CODE -ne 0 ]; then
+                    echo ""
+                    echo "[ ai-fix ] Critical issues detected. Review and re-commit."
+                    echo "[ ai-fix ] To skip (not recommended): git commit --no-verify"
+                    exit 1
                 fi
-
-                exit 0
-                """;
+                echo "[ ai-fix ] Scan complete. Proceeding with commit."
+            else
+                echo "[ ai-fix ] WARNING: ai-fix not found in PATH. Skipping AI review."
+                echo "[ ai-fix ] Install: https://github.com/fayzsa/sonar_agent"
+            fi
+            
+            exit 0
+            """;
 
         Files.writeString(hookFile, hookContent);
         hookFile.toFile().setExecutable(true);
@@ -136,9 +136,15 @@ public class GitOperationsTool {
     }
 
     private String buildCombinedDiff(String staged, String unstaged) {
-        if (staged.isBlank() && unstaged.isBlank()) return "";
-        if (staged.isBlank()) return unstaged;
-        if (unstaged.isBlank()) return staged;
+        if (staged.isBlank() && unstaged.isBlank()) {
+            return "";
+        }
+        if (staged.isBlank()) {
+            return unstaged;
+        }
+        if (unstaged.isBlank()) {
+            return staged;
+        }
 
         // Prefer staged version when the same file appears in both diffs
         Set<String> stagedFiles = extractFilenames(staged);

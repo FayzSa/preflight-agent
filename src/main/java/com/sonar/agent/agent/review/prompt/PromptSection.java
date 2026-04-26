@@ -1,8 +1,8 @@
 package com.sonar.agent.agent.review.prompt;
 
 public sealed interface PromptSection
-        permits PromptSection.Role, PromptSection.Task, PromptSection.Rules,
-        PromptSection.OutputSchema, PromptSection.DimensionFocus {
+    permits PromptSection.Role, PromptSection.Task, PromptSection.Rules,
+    PromptSection.OutputSchema, PromptSection.DimensionFocus {
 
     String render();
 

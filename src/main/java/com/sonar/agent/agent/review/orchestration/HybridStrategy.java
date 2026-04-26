@@ -4,6 +4,7 @@ import com.sonar.agent.agent.models.DiffResult;
 import com.sonar.agent.agent.models.FixProposal;
 import com.sonar.agent.agent.review.dimension.ReviewDimension;
 import com.sonar.agent.agent.review.prompt.PromptBuilder;
+
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -32,23 +33,23 @@ public class HybridStrategy implements ReviewStrategy {
     @Override
     public List<FixProposal> review(DiffResult diff, String language) {
         List<ReviewDimension> selectedDimensions = dimensions.stream()
-                .filter(dimension -> dimension.shouldRun(diff))
-                .toList();
+            .filter(dimension -> dimension.shouldRun(diff))
+            .toList();
 
         if (selectedDimensions.isEmpty()) {
             return List.of();
         }
 
         List<CompletableFuture<List<FixProposal>>> calls = selectedDimensions.stream()
-                .map(dimension -> CompletableFuture.supplyAsync(() -> reviewDimension(diff, language, dimension)))
-                .toList();
+            .map(dimension -> CompletableFuture.supplyAsync(() -> reviewDimension(diff, language, dimension)))
+            .toList();
 
         List<FixProposal> merged = calls.stream()
-                .map(CompletableFuture::join)
-                .flatMap(List::stream)
-                .filter(this::hasRequiredSeverity)
-                .sorted(Comparator.comparing(FixProposal::filename, Comparator.nullsLast(String::compareTo)))
-                .toList();
+            .map(CompletableFuture::join)
+            .flatMap(List::stream)
+            .filter(this::hasRequiredSeverity)
+            .sorted(Comparator.comparing(FixProposal::filename, Comparator.nullsLast(String::compareTo)))
+            .toList();
 
         return deduplicate(merged);
     }
@@ -67,9 +68,9 @@ public class HybridStrategy implements ReviewStrategy {
         Map<String, FixProposal> unique = new LinkedHashMap<>();
         for (FixProposal proposal : proposals) {
             String key = String.join("\u0001",
-                    valueOrEmpty(proposal.filename()),
-                    valueOrEmpty(proposal.originalSnippet()),
-                    valueOrEmpty(proposal.category()));
+                valueOrEmpty(proposal.filename()),
+                valueOrEmpty(proposal.originalSnippet()),
+                valueOrEmpty(proposal.category()));
             unique.putIfAbsent(key, proposal);
         }
         return List.copyOf(unique.values());

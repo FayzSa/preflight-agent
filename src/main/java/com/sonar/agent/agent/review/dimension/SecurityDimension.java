@@ -9,8 +9,8 @@ public class SecurityDimension extends AbstractKeywordDimension {
 
     public SecurityDimension() {
         super("password", "secret", "token", "auth", "jwt", "sql", "query", "exec", "command",
-                "processbuilder", "runtime", "script", "html", "redirect", "url", "path", "xml",
-                "deserialize", "cookie", "session", "csrf", "xss", "ssrf");
+            "processbuilder", "runtime", "script", "html", "redirect", "url", "path", "xml",
+            "deserialize", "cookie", "session", "csrf", "xss", "ssrf");
     }
 
     @Override
@@ -21,10 +21,10 @@ public class SecurityDimension extends AbstractKeywordDimension {
     @Override
     public String focus() {
         return """
-                Security vulnerabilities: SQL injection, XSS, SSRF, command injection, hardcoded
-                secrets or credentials, insecure deserialization, path traversal, XXE, open redirect,
-                broken authentication, unsafe cryptography, and authorization bypasses.
-                """;
+            Security vulnerabilities: SQL injection, XSS, SSRF, command injection, hardcoded
+            secrets or credentials, insecure deserialization, path traversal, XXE, open redirect,
+            broken authentication, unsafe cryptography, and authorization bypasses.
+            """;
     }
 
     @Override

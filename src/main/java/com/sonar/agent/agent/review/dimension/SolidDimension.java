@@ -9,7 +9,7 @@ public class SolidDimension extends AbstractKeywordDimension {
 
     public SolidDimension() {
         super("class ", "interface ", "implements", "extends", "new ", "static", "public ",
-                "private ", "service", "controller", "repository", "component");
+            "private ", "service", "controller", "repository", "component");
     }
 
     @Override
@@ -20,10 +20,10 @@ public class SolidDimension extends AbstractKeywordDimension {
     @Override
     public String focus() {
         return """
-                SOLID design failures visible in the diff: new god classes, hard-coded dependencies where
-                dependency injection is already used, broken substitutions, oversized interfaces, and
-                responsibilities mixed in a way that creates immediate maintenance risk.
-                """;
+            SOLID design failures visible in the diff: new god classes, hard-coded dependencies where
+            dependency injection is already used, broken substitutions, oversized interfaces, and
+            responsibilities mixed in a way that creates immediate maintenance risk.
+            """;
     }
 
     @Override

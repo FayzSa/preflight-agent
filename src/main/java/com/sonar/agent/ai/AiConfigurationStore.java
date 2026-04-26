@@ -20,46 +20,46 @@ public class AiConfigurationStore {
         try {
             Properties props = load();
             String providerValue = firstNonBlank(
-                    props.getProperty(PROVIDER_KEY),
-                    System.getenv("AI_FIX_AI_PROVIDER")
+                props.getProperty(PROVIDER_KEY),
+                System.getenv("AI_FIX_AI_PROVIDER")
             );
             if (isBlank(providerValue)) {
                 throw new IllegalStateException("""
-                        AI provider is not selected.
-                        Run: config-select-ai --provider gemini
-                        Then set its key: config-set-key --provider gemini --api-key <key>
-                        Supported providers: gemini, openai, claude.
-                        """);
+                    AI provider is not selected.
+                    Run: config-select-ai --provider gemini
+                    Then set its key: config-set-key --provider gemini --api-key <key>
+                    Supported providers: gemini, openai, claude.
+                    """);
             }
 
             AiProvider provider = AiProvider.from(providerValue);
             String providerId = provider.id();
             String apiKey = firstNonBlank(
-                    props.getProperty("ai-fix.ai.%s.api-key".formatted(providerId)),
-                    providerApiKeyFromEnvironment(provider)
+                props.getProperty("ai-fix.ai.%s.api-key".formatted(providerId)),
+                providerApiKeyFromEnvironment(provider)
             );
             if (isBlank(apiKey)) {
                 throw new IllegalStateException("""
-                        API key is not configured for %s.
-                        Run: config-set-key --provider %s --api-key <key>
-                        """.formatted(providerId, providerId));
+                    API key is not configured for %s.
+                    Run: config-set-key --provider %s --api-key <key>
+                    """.formatted(providerId, providerId));
             }
 
             String model = firstNonBlank(
-                    props.getProperty("ai-fix.ai.%s.model".formatted(providerId)),
-                    System.getenv("AI_FIX_%s_MODEL".formatted(providerId.toUpperCase(Locale.ROOT))),
-                    defaultModel(provider)
+                props.getProperty("ai-fix.ai.%s.model".formatted(providerId)),
+                System.getenv("AI_FIX_%s_MODEL".formatted(providerId.toUpperCase(Locale.ROOT))),
+                defaultModel(provider)
             );
 
             int maxOutputTokens = parseInt(firstNonBlank(
-                    props.getProperty(MAX_OUTPUT_TOKENS_KEY),
-                    System.getenv("AI_FIX_AI_MAX_OUTPUT_TOKENS"),
-                    "8096"
+                props.getProperty(MAX_OUTPUT_TOKENS_KEY),
+                System.getenv("AI_FIX_AI_MAX_OUTPUT_TOKENS"),
+                "8096"
             ));
             double temperature = parseDouble(firstNonBlank(
-                    props.getProperty(TEMPERATURE_KEY),
-                    System.getenv("AI_FIX_AI_TEMPERATURE"),
-                    "0.1"
+                props.getProperty(TEMPERATURE_KEY),
+                System.getenv("AI_FIX_AI_TEMPERATURE"),
+                "0.1"
             ));
 
             return new AiRuntimeConfig(provider, apiKey, model, maxOutputTokens, temperature);
@@ -89,17 +89,17 @@ public class AiConfigurationStore {
     private String providerApiKeyFromEnvironment(AiProvider provider) {
         return switch (provider) {
             case GEMINI -> firstNonBlank(
-                    System.getenv("AI_FIX_GEMINI_API_KEY"),
-                    System.getenv("GEMINI_API_KEY"),
-                    System.getenv("GOOGLE_AI_API_KEY")
+                System.getenv("AI_FIX_GEMINI_API_KEY"),
+                System.getenv("GEMINI_API_KEY"),
+                System.getenv("GOOGLE_AI_API_KEY")
             );
             case OPENAI -> firstNonBlank(
-                    System.getenv("AI_FIX_OPENAI_API_KEY"),
-                    System.getenv("OPENAI_API_KEY")
+                System.getenv("AI_FIX_OPENAI_API_KEY"),
+                System.getenv("OPENAI_API_KEY")
             );
             case CLAUDE -> firstNonBlank(
-                    System.getenv("AI_FIX_CLAUDE_API_KEY"),
-                    System.getenv("ANTHROPIC_API_KEY")
+                System.getenv("AI_FIX_CLAUDE_API_KEY"),
+                System.getenv("ANTHROPIC_API_KEY")
             );
         };
     }

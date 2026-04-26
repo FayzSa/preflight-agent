@@ -9,7 +9,7 @@ public class CriticalBugDimension extends AbstractKeywordDimension {
 
     public CriticalBugDimension() {
         super("null", "optional", "close", "stream", "connection", "lock", "synchronized",
-                "thread", "executor", "while", "for", "overflow", "divide", "parse", "cast");
+            "thread", "executor", "while", "for", "overflow", "divide", "parse", "cast");
     }
 
     @Override
@@ -20,10 +20,10 @@ public class CriticalBugDimension extends AbstractKeywordDimension {
     @Override
     public String focus() {
         return """
-                Critical correctness failures: null pointer dereferences, resource leaks, race
-                conditions, integer overflow or underflow, infinite loops, deadlocks, invalid casts,
-                and exceptions that will break normal production flows.
-                """;
+            Critical correctness failures: null pointer dereferences, resource leaks, race
+            conditions, integer overflow or underflow, infinite loops, deadlocks, invalid casts,
+            and exceptions that will break normal production flows.
+            """;
     }
 
     @Override

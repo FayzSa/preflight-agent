@@ -3,6 +3,7 @@ package com.sonar.agent.agent.review;
 import com.sonar.agent.agent.models.AnalysisResponse;
 import com.sonar.agent.agent.models.DiffResult;
 import com.sonar.agent.agent.review.orchestration.ReviewStrategy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -32,11 +33,11 @@ public class ReviewOrchestrator {
 
     private String detectLanguage(DiffResult diff) {
         List<String> languages = diff.fileDiffs().stream()
-                .map(DiffResult.FileDiff::filename)
-                .map(this::mapExtensionToLanguage)
-                .filter(lang -> !"Unknown".equals(lang))
-                .distinct()
-                .toList();
+            .map(DiffResult.FileDiff::filename)
+            .map(this::mapExtensionToLanguage)
+            .filter(lang -> !"Unknown".equals(lang))
+            .distinct()
+            .toList();
 
         if (languages.isEmpty()) {
             return "Unknown";
