@@ -4,6 +4,7 @@ import com.sonar.agent.agent.models.DiffResult;
 import com.sonar.agent.agent.models.FixProposal;
 import com.sonar.agent.agent.review.dimension.ReviewDimension;
 import com.sonar.agent.agent.review.prompt.PromptBuilder;
+
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -28,15 +29,15 @@ public class PerDimensionStrategy implements ReviewStrategy {
     @Override
     public List<FixProposal> review(DiffResult diff, String language) {
         List<CompletableFuture<List<FixProposal>>> calls = dimensions.stream()
-                .filter(dimension -> dimension.shouldRun(diff))
-                .map(dimension -> CompletableFuture.supplyAsync(() -> reviewDimension(diff, language, dimension)))
-                .toList();
+            .filter(dimension -> dimension.shouldRun(diff))
+            .map(dimension -> CompletableFuture.supplyAsync(() -> reviewDimension(diff, language, dimension)))
+            .toList();
 
         return calls.stream()
-                .map(CompletableFuture::join)
-                .flatMap(List::stream)
-                .sorted(Comparator.comparing(FixProposal::filename, Comparator.nullsLast(String::compareTo)))
-                .toList();
+            .map(CompletableFuture::join)
+            .flatMap(List::stream)
+            .sorted(Comparator.comparing(FixProposal::filename, Comparator.nullsLast(String::compareTo)))
+            .toList();
     }
 
     private List<FixProposal> reviewDimension(DiffResult diff, String language, ReviewDimension dimension) {

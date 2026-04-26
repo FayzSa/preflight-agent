@@ -9,8 +9,8 @@ public class RegressionDimension extends AbstractKeywordDimension {
 
     public RegressionDimension() {
         super("public ", "protected ", "api", "endpoint", "controller", "service", "interface",
-                "record ", "class ", "enum ", "return", "throw", "config", "property", "json",
-                "request", "response");
+            "record ", "class ", "enum ", "return", "throw", "config", "property", "json",
+            "request", "response");
     }
 
     @Override
@@ -21,10 +21,10 @@ public class RegressionDimension extends AbstractKeywordDimension {
     @Override
     public String focus() {
         return """
-                Behavior regressions: changed public contracts, altered response shapes, changed error
-                behavior, backwards-incompatible defaults, removed side effects callers depend on, and
-                semantic changes that are visible to existing consumers.
-                """;
+            Behavior regressions: changed public contracts, altered response shapes, changed error
+            behavior, backwards-incompatible defaults, removed side effects callers depend on, and
+            semantic changes that are visible to existing consumers.
+            """;
     }
 
     @Override

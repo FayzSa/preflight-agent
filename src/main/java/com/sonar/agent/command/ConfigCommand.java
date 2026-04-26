@@ -1,6 +1,7 @@
 package com.sonar.agent.command;
 
 import com.sonar.agent.ai.AiProvider;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.shell.standard.ShellComponent;
@@ -28,7 +29,7 @@ public class ConfigCommand {
 
     @ShellMethod(key = "config-select-ai", value = "Select which AI provider to use: gemini, openai, or claude")
     public String configSelectAi(
-            @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider
+        @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider
     ) {
         try {
             AiProvider selected = AiProvider.from(provider);
@@ -40,8 +41,8 @@ public class ConfigCommand {
 
     @ShellMethod(key = "config-set-key", value = "Store an API key for an AI provider")
     public String configSetApiKey(
-            @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider,
-            @ShellOption(value = "--api-key", help = "Provider API key or token") String apiKey
+        @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider,
+        @ShellOption(value = "--api-key", help = "Provider API key or token") String apiKey
     ) {
         try {
             AiProvider selected = AiProvider.from(provider);
@@ -54,8 +55,8 @@ public class ConfigCommand {
 
     @ShellMethod(key = "config-set-model", value = "Set the model used by an AI provider")
     public String configSetModel(
-            @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider,
-            @ShellOption(value = "--model", help = "Model name for that provider") String model
+        @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider,
+        @ShellOption(value = "--model", help = "Model name for that provider") String model
     ) {
         try {
             AiProvider selected = AiProvider.from(provider);
@@ -67,8 +68,8 @@ public class ConfigCommand {
 
     @ShellMethod(key = "config-set", value = "Set any configuration key")
     public String configSet(
-            @ShellOption(value = "--key", help = "Configuration property key") String key,
-            @ShellOption(value = "--value", help = "Configuration property value") String value
+        @ShellOption(value = "--key", help = "Configuration property key") String key,
+        @ShellOption(value = "--value", help = "Configuration property value") String value
     ) {
         return set(key, value);
     }
@@ -79,8 +80,8 @@ public class ConfigCommand {
             Properties props = load();
             if (props.isEmpty()) {
                 return "No configuration saved yet.\n"
-                        + "  Run: config-select-ai --provider gemini\n"
-                        + "  Then: config-set-key --provider gemini --api-key <key>";
+                    + "  Run: config-select-ai --provider gemini\n"
+                    + "  Then: config-set-key --provider gemini --api-key <key>";
             }
 
             StringBuilder sb = new StringBuilder("Saved configuration (~/.aifix/config.properties):\n");
@@ -89,7 +90,6 @@ public class ConfigCommand {
                 sb.append("  ").append(k).append(" = ").append(display).append("\n");
             });
             return sb.toString();
-
         } catch (IOException e) {
             return "Failed to read config: " + e.getMessage();
         }
@@ -110,7 +110,7 @@ public class ConfigCommand {
             save(props);
             String display = isSecret(key) ? mask(value) : value;
             return green("Set " + key + " = " + display) + "\n"
-                    + "  This value is used on the next scan, fix, or webhook review.";
+                + "  This value is used on the next scan, fix, or webhook review.";
         } catch (IOException e) {
             return red("Failed to save config: " + e.getMessage());
         }

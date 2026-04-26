@@ -4,6 +4,7 @@ import com.sonar.agent.agent.models.DiffResult;
 import com.sonar.agent.agent.models.FixProposal;
 import com.sonar.agent.agent.review.dimension.ReviewDimension;
 import com.sonar.agent.agent.review.prompt.PromptBuilder;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -26,8 +27,8 @@ public class CombinedPromptStrategy implements ReviewStrategy {
     @Override
     public List<FixProposal> review(DiffResult diff, String language) {
         List<ReviewDimension> selectedDimensions = dimensions.stream()
-                .filter(dimension -> dimension.shouldRun(diff))
-                .toList();
+            .filter(dimension -> dimension.shouldRun(diff))
+            .toList();
         if (selectedDimensions.isEmpty()) {
             return List.of();
         }

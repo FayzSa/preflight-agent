@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -11,6 +12,8 @@ import org.springframework.web.client.RestClient;
 public class MultiProviderAiClient implements AiClient {
 
     private static final String ANTHROPIC_VERSION = "2023-06-01";
+    private static final String CONTENT_FIELD_NAME = "content";
+    private static final String PARTS_FIELD_NAME = "parts";
 
     private final AiConfigurationStore configurationStore;
     private final ObjectMapper objectMapper;
@@ -38,17 +41,17 @@ public class MultiProviderAiClient implements AiClient {
 
     private String callGemini(AiRuntimeConfig config, String systemPrompt, String userMessage) {
         String model = config.model().startsWith("models/")
-                ? config.model().substring("models/".length())
-                : config.model();
+            ? config.model().substring("models/".length())
+            : config.model();
         String response = restClient.post()
-                .uri("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", model)
-                .header("x-goog-api-key", config.apiKey())
-                .body(buildGeminiRequest(config, systemPrompt, userMessage))
-                .retrieve()
-                .body(String.class);
+            .uri("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", model)
+            .header("x-goog-api-key", config.apiKey())
+            .body(buildGeminiRequest(config, systemPrompt, userMessage))
+            .retrieve()
+            .body(String.class);
 
         JsonNode root = readTree(response);
-        JsonNode parts = root.path("candidates").path(0).path("content").path("parts");
+        JsonNode parts = root.path("candidates").path(0).path(CONTENT_FIELD_NAME).path(PARTS_FIELD_NAME);
         if (parts.isArray() && !parts.isEmpty()) {
             return parts.get(0).path("text").asText();
         }
@@ -57,11 +60,11 @@ public class MultiProviderAiClient implements AiClient {
 
     private String callOpenAi(AiRuntimeConfig config, String systemPrompt, String userMessage) {
         String response = restClient.post()
-                .uri("https://api.openai.com/v1/responses")
-                .header("Authorization", "Bearer " + config.apiKey())
-                .body(buildOpenAiRequest(config, systemPrompt, userMessage))
-                .retrieve()
-                .body(String.class);
+            .uri("https://api.openai.com/v1/responses")
+            .header("Authorization", "Bearer " + config.apiKey())
+            .body(buildOpenAiRequest(config, systemPrompt, userMessage))
+            .retrieve()
+            .body(String.class);
 
         JsonNode root = readTree(response);
         String outputText = root.path("output_text").asText(null);
@@ -83,12 +86,12 @@ public class MultiProviderAiClient implements AiClient {
 
     private String callClaude(AiRuntimeConfig config, String systemPrompt, String userMessage) {
         String response = restClient.post()
-                .uri("https://api.anthropic.com/v1/messages")
-                .header("x-api-key", config.apiKey())
-                .header("anthropic-version", ANTHROPIC_VERSION)
-                .body(buildClaudeRequest(config, systemPrompt, userMessage))
-                .retrieve()
-                .body(String.class);
+            .uri("https://api.anthropic.com/v1/messages")
+            .header("x-api-key", config.apiKey())
+            .header("anthropic-version", ANTHROPIC_VERSION)
+            .body(buildClaudeRequest(config, systemPrompt, userMessage))
+            .retrieve()
+            .body(String.class);
 
         JsonNode root = readTree(response);
         StringBuilder text = new StringBuilder();
@@ -103,42 +106,42 @@ public class MultiProviderAiClient implements AiClient {
     private ObjectNode buildGeminiRequest(AiRuntimeConfig config, String systemPrompt, String userMessage) {
         ObjectNode request = objectMapper.createObjectNode();
         request.set("systemInstruction", objectMapper.createObjectNode()
-                .set("parts", textParts(systemPrompt)));
+            .set("parts", textParts(systemPrompt)));
 
         ArrayNode contents = objectMapper.createArrayNode();
         contents.add(objectMapper.createObjectNode()
-                .put("role", "user")
-                .set("parts", textParts(userMessage)));
+            .put("role", "user")
+            .set("parts", textParts(userMessage)));
         request.set("contents", contents);
 
         request.set("generationConfig", objectMapper.createObjectNode()
-                .put("temperature", config.temperature())
-                .put("maxOutputTokens", config.maxOutputTokens())
-                .put("responseMimeType", "application/json"));
+            .put("temperature", config.temperature())
+            .put("maxOutputTokens", config.maxOutputTokens())
+            .put("responseMimeType", "application/json"));
         return request;
     }
 
     private ObjectNode buildOpenAiRequest(AiRuntimeConfig config, String systemPrompt, String userMessage) {
         return objectMapper.createObjectNode()
-                .put("model", config.model())
-                .put("instructions", systemPrompt)
-                .put("input", userMessage)
-                .put("temperature", config.temperature())
-                .put("max_output_tokens", config.maxOutputTokens());
+            .put("model", config.model())
+            .put("instructions", systemPrompt)
+            .put("input", userMessage)
+            .put("temperature", config.temperature())
+            .put("max_output_tokens", config.maxOutputTokens());
     }
 
     private ObjectNode buildClaudeRequest(AiRuntimeConfig config, String systemPrompt, String userMessage) {
         ArrayNode messages = objectMapper.createArrayNode();
         messages.add(objectMapper.createObjectNode()
-                .put("role", "user")
-                .put("content", userMessage));
+            .put("role", "user")
+            .put("content", userMessage));
 
         return objectMapper.createObjectNode()
-                .put("model", config.model())
-                .put("system", systemPrompt)
-                .put("max_tokens", config.maxOutputTokens())
-                .put("temperature", config.temperature())
-                .set("messages", messages);
+            .put("model", config.model())
+            .put("system", systemPrompt)
+            .put("max_tokens", config.maxOutputTokens())
+            .put("temperature", config.temperature())
+            .set("messages", messages);
     }
 
     private ArrayNode textParts(String text) {

@@ -2,10 +2,10 @@ package com.sonar.agent.agent;
 
 import com.sonar.agent.agent.models.AnalysisResponse;
 import com.sonar.agent.agent.models.DiffResult;
-import com.sonar.agent.agent.models.FixProposal;
 import com.sonar.agent.agent.review.ReviewOrchestrator;
 import com.sonar.agent.tools.FileSystemTool;
 import com.sonar.agent.tools.GitOperationsTool;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Orchestrates the full Analyze -> Format -> Patch workflow.
- *
+ * <p>
  * Graph steps:
  * 1. Extract - GitOperationsTool fetches git diff -U5.
  * 2. Analyze - ReviewOrchestrator selects dimensions and asks the LLM.
@@ -56,7 +56,7 @@ public class AnalyzerGraph {
 
     public List<Boolean> applyFixes(AnalysisResponse response, String workingDirectory) {
         return response.issues().stream()
-                .map(issue -> fileSystemTool.applyFix(issue, workingDirectory))
-                .toList();
+            .map(issue -> fileSystemTool.applyFix(issue, workingDirectory))
+            .toList();
     }
 }

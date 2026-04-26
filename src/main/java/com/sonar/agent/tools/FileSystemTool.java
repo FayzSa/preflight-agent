@@ -1,6 +1,7 @@
 package com.sonar.agent.tools;
 
 import com.sonar.agent.agent.models.FixProposal;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,8 +56,8 @@ public class FileSystemTool {
             }
 
             String fixedContent = normalizedContent.replace(
-                    normalizedOriginal,
-                    normalizeLineEndings(proposal.fixedSnippet())
+                normalizedOriginal,
+                normalizeLineEndings(proposal.fixedSnippet())
             );
 
             // Preserve original line endings (CRLF on Windows)
@@ -67,7 +68,6 @@ public class FileSystemTool {
             Files.writeString(filePath, fixedContent);
             log.info("Fix applied to: {}", filePath);
             return true;
-
         } catch (IOException e) {
             log.error("Failed to apply fix to {}: {}", proposal.filename(), e.getMessage());
             return false;
@@ -90,7 +90,9 @@ public class FileSystemTool {
     }
 
     private String normalizeLineEndings(String text) {
-        if (text == null) return "";
+        if (text == null) {
+            return "";
+        }
         return text.replace("\r\n", "\n").replace("\r", "\n");
     }
 }

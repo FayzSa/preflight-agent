@@ -6,6 +6,7 @@ import com.sonar.agent.ai.AiClient;
 import com.sonar.agent.agent.models.AnalysisResponse;
 import com.sonar.agent.agent.models.FixProposal;
 import com.sonar.agent.agent.review.prompt.OutputSchema;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

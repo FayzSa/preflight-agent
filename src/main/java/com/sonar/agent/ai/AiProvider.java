@@ -19,9 +19,9 @@ public enum AiProvider {
 
     public static AiProvider from(String value) {
         return Arrays.stream(values())
-                .filter(provider -> provider.id.equalsIgnoreCase(value))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Unsupported AI provider '%s'. Choose one of: gemini, openai, claude.".formatted(value)));
+            .filter(provider -> provider.id.equalsIgnoreCase(value))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Unsupported AI provider '%s'. Choose one of: gemini, openai, claude.".formatted(value)));
     }
 }

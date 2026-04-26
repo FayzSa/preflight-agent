@@ -9,8 +9,8 @@ public class PerformanceDimension extends AbstractKeywordDimension {
 
     public PerformanceDimension() {
         super("for", "while", "stream", "parallel", "query", "select", "join", "findall", "sleep",
-                "synchronized", "lock", "cache", "thread", "executor", "bytes", "stringbuilder",
-                "collect", "map");
+            "synchronized", "lock", "cache", "thread", "executor", "bytes", "stringbuilder",
+            "collect", "map");
     }
 
     @Override
@@ -21,10 +21,10 @@ public class PerformanceDimension extends AbstractKeywordDimension {
     @Override
     public String focus() {
         return """
-                Performance hazards: N+1 queries, synchronous I/O in hot paths, blocking work on request
-                threads, missing indexes on new queries, unbounded loops or allocations, avoidable quadratic
-                work, and cache or concurrency mistakes that can make the application slow.
-                """;
+            Performance hazards: N+1 queries, synchronous I/O in hot paths, blocking work on request
+            threads, missing indexes on new queries, unbounded loops or allocations, avoidable quadratic
+            work, and cache or concurrency mistakes that can make the application slow.
+            """;
     }
 
     @Override
