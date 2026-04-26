@@ -42,6 +42,12 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- Spring Web — REST endpoint for GitHub webhook (webhook profile only) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
         <!-- Spring Shell - CLI Engine -->
         <dependency>
             <groupId>org.springframework.shell</groupId>

@@ -54,7 +54,10 @@ public class AnalyzerGraph {
         }
 
         log.info("Diff captured: {} file(s) modified", diff.fileDiffs().size());
+        return analyze(diff);
+    }
 
+    public AnalysisResponse analyze(DiffResult diff) {
         String language = detectLanguage(diff);
         String systemPrompt = buildSystemPrompt(language);
         String userMessage = buildUserMessage(diff.rawDiff());
@@ -81,23 +84,30 @@ public class AnalyzerGraph {
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     private String detectLanguage(DiffResult diff) {
-        return diff.fileDiffs().stream()
+        List<String> languages = diff.fileDiffs().stream()
                 .map(DiffResult.FileDiff::filename)
-                .findFirst()
-                .map(name -> {
-                    if (name.endsWith(".java"))           return "Java";
-                    if (name.endsWith(".kt"))             return "Kotlin";
-                    if (name.endsWith(".js"))             return "JavaScript";
-                    if (name.endsWith(".ts") || name.endsWith(".tsx")) return "TypeScript";
-                    if (name.endsWith(".py"))             return "Python";
-                    if (name.endsWith(".go"))             return "Go";
-                    if (name.endsWith(".rs"))             return "Rust";
-                    if (name.endsWith(".cs"))             return "C#";
-                    if (name.endsWith(".php"))            return "PHP";
-                    if (name.endsWith(".rb"))             return "Ruby";
-                    return "Unknown";
-                })
-                .orElse("Unknown");
+                .map(this::mapExtensionToLanguage)
+                .filter(lang -> !"Unknown".equals(lang))
+                .distinct()
+                .toList();
+
+        if (languages.isEmpty()) return "Unknown";
+        if (languages.size() == 1) return languages.get(0);
+        return String.join(", ", languages);
+    }
+
+    private String mapExtensionToLanguage(String filename) {
+        if (filename.endsWith(".java"))                    return "Java";
+        if (filename.endsWith(".kt"))                      return "Kotlin";
+        if (filename.endsWith(".js"))                      return "JavaScript";
+        if (filename.endsWith(".ts") || filename.endsWith(".tsx")) return "TypeScript";
+        if (filename.endsWith(".py"))                      return "Python";
+        if (filename.endsWith(".go"))                      return "Go";
+        if (filename.endsWith(".rs"))                      return "Rust";
+        if (filename.endsWith(".cs"))                      return "C#";
+        if (filename.endsWith(".php"))                     return "PHP";
+        if (filename.endsWith(".rb"))                      return "Ruby";
+        return "Unknown";
     }
 
     private String buildSystemPrompt(String language) {

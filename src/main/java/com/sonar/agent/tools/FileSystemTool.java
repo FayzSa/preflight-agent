@@ -3,6 +3,7 @@ package com.sonar.agent.tools;
 import com.sonar.agent.agent.models.FixProposal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,6 +19,9 @@ public class FileSystemTool {
 
     private static final Logger log = LoggerFactory.getLogger(FileSystemTool.class);
     private static final DateTimeFormatter BACKUP_TIMESTAMP = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+
+    @Value("${ai-fix.backup.enabled:true}")
+    private boolean backupEnabled;
 
     public String readFile(String filePath) throws IOException {
         return Files.readString(Paths.get(filePath));
@@ -46,7 +50,9 @@ public class FileSystemTool {
                 return false;
             }
 
-            createBackup(filePath);
+            if (backupEnabled) {
+                createBackup(filePath);
+            }
 
             String fixedContent = normalizedContent.replace(
                     normalizedOriginal,

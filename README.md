@@ -11,7 +11,7 @@ A blazing-fast terminal tool that implements **Shift-Left** DevOps by scanning y
 ## How it works
 
 1. **Extract** — Runs `git diff -U5` to capture only modified lines and their context
-2. **Analyze** — Sends the diff to Gemini 2.0 Flash wrapped in a "Senior Staff Engineer" system prompt
+2. **Analyze** — Sends the diff to Gemini 2.5 Flash wrapped in a "Senior Staff Engineer" system prompt
 3. **Format** — The LLM returns a strict JSON payload with `original_snippet` and `fixed_snippet`
 4. **Patch** — The tool locates each snippet in your local file and replaces it in-place
 
@@ -145,7 +145,7 @@ ai-fix config-set-key --api-key AIza...
 
 ```bash
 # Switch to a different model
-ai-fix config-set --key spring.ai.google.gemini.chat.options.model --value gemini-2.0-flash-lite
+ai-fix config-set --key spring.ai.google.genai.chat.options.model --value gemini-2.5-flash
 ```
 
 ### `config-show` — View current config
@@ -228,9 +228,54 @@ src/main/java/com/sonar/agent/
 | Framework | Spring Boot 3.3 |
 | CLI engine | Spring Shell 3.3 |
 | AI integration | Spring AI 1.0 (Google Gemini) |
-| LLM | Gemini 2.0 Flash |
+| LLM | Gemini 2.5 Flash |
 | Build | Maven |
 | Native binary | GraalVM Native Image |
+
+---
+
+## GitHub App — Automated PR Reviews
+
+Run ai-fix as a webhook server to automatically review every pull request.
+
+### 1. Configure a GitHub webhook
+
+In your repository (or organisation), go to **Settings → Webhooks → Add webhook** and set:
+
+| Field | Value |
+|---|---|
+| Payload URL | `https://your-server/webhook` |
+| Content type | `application/json` |
+| Secret | A random string (copy it for the next step) |
+| Events | **Pull requests** |
+
+### 2. Start the server
+
+```bash
+export AI_FIX_WEBHOOK_SECRET="<the-secret-from-above>"
+export AI_FIX_WEBHOOK_GITHUB_TOKEN="ghp_..."   # PAT with pull_requests:write + contents:read
+export GOOGLE_AI_API_KEY="AIza..."
+
+java -jar target/sonar-agent-1.0.0.jar --spring.profiles.active=webhook
+```
+
+Or with Docker:
+
+```bash
+GOOGLE_AI_API_KEY=AIza... \
+AI_FIX_WEBHOOK_SECRET=mysecret \
+AI_FIX_WEBHOOK_GITHUB_TOKEN=ghp_... \
+docker compose --profile webhook up
+```
+
+### 3. What happens on each PR
+
+| Scenario | Review posted |
+|---|---|
+| No issues found | ✅ `COMMENT` — scan passed |
+| Issues found | 🔴 `REQUEST_CHANGES` — lists every issue with before/after snippets |
+
+The server accepts `opened`, `synchronize`, and `reopened` events and ignores everything else.
 
 ---
 
@@ -240,7 +285,7 @@ src/main/java/com/sonar/agent/
 - [x] Git pre-commit hook integration
 - [x] Dynamic language detection with language-specific prompts
 - [x] Docker / docker-compose support
-- [ ] GitHub App — wrap the agent in a REST API for automated PR reviews
+- [x] GitHub App — REST API for automated PR reviews
 
 ---
 
