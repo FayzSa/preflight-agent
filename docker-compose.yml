@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Usage:
 #   docker compose run --rm ai-fix scan
 #   docker compose run --rm ai-fix fix
@@ -18,9 +16,11 @@ services:
       - .:/workspace
       # Mount host git config so commits inside the container are attributed correctly
       - ~/.gitconfig:/root/.gitconfig:ro
+      # Mount stored API key / config from host (written by config-set-key)
+      - ~/.aifix:/root/.aifix:ro
     working_dir: /workspace
     environment:
       # API key from host environment
-      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY:-${SPRING_AI_API_KEY:-}}
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY:-}
     stdin_open: true
     tty: true

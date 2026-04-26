@@ -11,7 +11,7 @@ A blazing-fast terminal tool that implements **Shift-Left** DevOps by scanning y
 ## How it works
 
 1. **Extract** — Runs `git diff -U5` to capture only modified lines and their context
-2. **Analyze** — Sends the diff to Gemini 2.0 Flash wrapped in a "Senior Staff Engineer" system prompt
+2. **Analyze** — Sends the diff to Gemini 2.5 Flash wrapped in a "Senior Staff Engineer" system prompt
 3. **Format** — The LLM returns a strict JSON payload with `original_snippet` and `fixed_snippet`
 4. **Patch** — The tool locates each snippet in your local file and replaces it in-place
 
@@ -145,7 +145,7 @@ ai-fix config-set-key --api-key AIza...
 
 ```bash
 # Switch to a different model
-ai-fix config-set --key spring.ai.google.gemini.chat.options.model --value gemini-2.0-flash-lite
+ai-fix config-set --key spring.ai.google.genai.chat.options.model --value gemini-2.5-flash
 ```
 
 ### `config-show` — View current config
@@ -228,7 +228,7 @@ src/main/java/com/sonar/agent/
 | Framework | Spring Boot 3.3 |
 | CLI engine | Spring Shell 3.3 |
 | AI integration | Spring AI 1.0 (Google Gemini) |
-| LLM | Gemini 2.0 Flash |
+| LLM | Gemini 2.5 Flash |
 | Build | Maven |
 | Native binary | GraalVM Native Image |
 

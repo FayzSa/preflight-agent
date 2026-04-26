@@ -12,7 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -107,11 +109,18 @@ public class GitOperationsTool {
         Process process = pb.start();
 
         String output;
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        String errorOutput;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+             BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
             output = reader.lines().collect(Collectors.joining("\n"));
+            errorOutput = errorReader.lines().collect(Collectors.joining("\n"));
         }
 
-        process.waitFor();
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            String errorMsg = errorOutput.isBlank() ? "exit code " + exitCode : errorOutput;
+            throw new RuntimeException("Git command failed: " + errorMsg);
+        }
         return output;
     }
 
@@ -120,8 +129,31 @@ public class GitOperationsTool {
         if (staged.isBlank()) return unstaged;
         if (unstaged.isBlank()) return staged;
 
-        // Deduplicate: if same file appears in both, prefer staged
-        return staged + "\n" + unstaged;
+        // Prefer staged version when the same file appears in both diffs
+        Set<String> stagedFiles = extractFilenames(staged);
+        String filteredUnstaged = filterOutFiles(unstaged, stagedFiles);
+        return filteredUnstaged.isBlank() ? staged : staged + "\n" + filteredUnstaged;
+    }
+
+    private Set<String> extractFilenames(String diff) {
+        Set<String> files = new HashSet<>();
+        for (String line : diff.split("\n")) {
+            if (line.startsWith("+++ b/")) {
+                files.add(line.substring(6));
+            }
+        }
+        return files;
+    }
+
+    private String filterOutFiles(String diff, Set<String> excludeFiles) {
+        StringBuilder result = new StringBuilder();
+        for (String section : diff.split("(?=diff --git )")) {
+            boolean excluded = excludeFiles.stream().anyMatch(f -> section.contains("+++ b/" + f));
+            if (!excluded && !section.isBlank()) {
+                result.append(section);
+            }
+        }
+        return result.toString().trim();
     }
 
     private List<DiffResult.FileDiff> parseDiff(String rawDiff) {

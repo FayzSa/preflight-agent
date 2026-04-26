@@ -1,8 +1,16 @@
 spring:
+  config:
+    import: optional:file:${user.home}/.aifix/config.properties
+
+  threads:
+    virtual:
+      enabled: true
+
   ai:
     google:
       genai:
         # Set via env var: export GOOGLE_AI_API_KEY="AIza..."
+        # Or run: config-set-key --api-key <key>  (stored in ~/.aifix/config.properties)
         api-key: ${GOOGLE_AI_API_KEY:${SPRING_AI_GOOGLE_GENAI_API_KEY:NOT_SET}}
         chat:
           options:

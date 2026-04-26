@@ -25,7 +25,7 @@ WORKDIR /workspace
 COPY --from=builder /app/target/sonar-agent-1.0.0.jar /usr/local/lib/ai-fix.jar
 
 # Thin wrapper so `ai-fix scan` works as a command
-RUN echo '#!/bin/sh\nexec java -jar /usr/local/lib/ai-fix.jar "$@"' > /usr/local/bin/ai-fix && \
+RUN printf '#!/bin/sh\nexec java -jar /usr/local/lib/ai-fix.jar "$@"\n' > /usr/local/bin/ai-fix && \
     chmod +x /usr/local/bin/ai-fix
 
 ENTRYPOINT ["ai-fix"]

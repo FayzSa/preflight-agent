@@ -20,8 +20,6 @@ import java.util.Properties;
 public class ConfigCommand {
 
     private static final Logger log = LoggerFactory.getLogger(ConfigCommand.class);
-    private static final Path CONFIG_DIR  = Paths.get(System.getProperty("user.home"), ".aifix");
-    private static final Path CONFIG_FILE = CONFIG_DIR.resolve("config.properties");
 
     @ShellMethod(key = "config-set-key", value = "Store your Google AI API key in ~/.aifix/config.properties")
     public String configSetApiKey(
@@ -63,6 +61,11 @@ public class ConfigCommand {
         }
     }
 
+    // ── Overridable for testing ───────────────────────────────────────────────
+
+    protected Path configDir()  { return Paths.get(System.getProperty("user.home"), ".aifix"); }
+    protected Path configFile() { return configDir().resolve("config.properties"); }
+
     // ── Private ───────────────────────────────────────────────────────────────
 
     private String set(String key, String value) {
@@ -80,8 +83,8 @@ public class ConfigCommand {
 
     private Properties load() throws IOException {
         Properties props = new Properties();
-        if (Files.exists(CONFIG_FILE)) {
-            try (var reader = Files.newBufferedReader(CONFIG_FILE)) {
+        if (Files.exists(configFile())) {
+            try (var reader = Files.newBufferedReader(configFile())) {
                 props.load(reader);
             }
         }
@@ -89,11 +92,11 @@ public class ConfigCommand {
     }
 
     private void save(Properties props) throws IOException {
-        Files.createDirectories(CONFIG_DIR);
-        try (var writer = Files.newBufferedWriter(CONFIG_FILE)) {
+        Files.createDirectories(configDir());
+        try (var writer = Files.newBufferedWriter(configFile())) {
             props.store(writer, "ai-fix configuration — do not share this file");
         }
-        log.debug("Config saved to {}", CONFIG_FILE);
+        log.debug("Config saved to {}", configFile());
     }
 
     private boolean isSecret(String key) {
