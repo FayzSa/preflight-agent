@@ -1,21 +1,28 @@
-# ai-fix — AI-Native Code Review CLI
+# ai-fix - AI-Native Code Review CLI
 
-A blazing-fast terminal tool that implements **Shift-Left** DevOps by scanning your uncommitted Git changes, identifying critical security vulnerabilities and bugs using an LLM, and automatically applying fixes to your local files — all before you commit.
+ai-fix scans your uncommitted Git changes before you commit, asks the selected AI provider to look for high-impact issues, and can apply the proposed fixes directly to your local files.
 
-```
-╔══════════════════════════════════════╗
-║    AI Code Review  ·  Shift-Left     ║
-╚══════════════════════════════════════╝
-```
+It supports three AI providers:
 
-## How it works
+| Provider | CLI id | Default model |
+|---|---|---|
+| Google Gemini | `gemini` | `gemini-2.5-flash` |
+| OpenAI | `openai` | `gpt-4.1-mini` |
+| Anthropic Claude | `claude` | `claude-sonnet-4-20250514` |
 
-1. **Extract** — Runs `git diff -U5` to capture only modified lines and their context
-2. **Analyze** — Sends the diff to Gemini 2.5 Flash wrapped in a "Senior Staff Engineer" system prompt
-3. **Format** — The LLM returns a strict JSON payload with `original_snippet` and `fixed_snippet`
-4. **Patch** — The tool locates each snippet in your local file and replaces it in-place
+You must select one provider and configure its API key before running `scan`, `fix`, or webhook reviews.
 
-If no critical issues are found, the process exits cleanly. No noise.
+---
+
+## How It Works
+
+1. **Extract** - runs `git diff -U5` to capture modified lines and nearby context.
+2. **Select dimensions** - cheap heuristics choose relevant review lenses such as security, regression, performance, or SOLID.
+3. **Analyze** - sends the diff to the selected AI provider.
+4. **Format** - expects strict JSON with `original_snippet`, `fixed_snippet`, severity, and category.
+5. **Patch** - for `fix`, replaces each exact snippet in your local files and creates backups.
+
+If no critical or high severity issues are found, the process exits cleanly.
 
 ---
 
@@ -26,266 +33,294 @@ If no critical issues are found, the process exits cleanly. No noise.
 | JDK | 21+ |
 | Maven | 3.9+ |
 | Git | Any modern version |
-| GraalVM *(native image only)* | 21+ |
-| Google AI API key | — |
+| GraalVM | 21+, native image only |
+| AI API key | Gemini, OpenAI, or Claude |
 
 ---
 
 ## Setup
 
-### 1. Set your API key
-
-```bash
-export GOOGLE_AI_API_KEY="AIza..."
-```
-
-Or store it persistently with the built-in config command after first run:
-
-```bash
-ai-fix config-set-key --api-key AIza...
-```
-
-### 2. Build (JVM — for development)
+### 1. Build
 
 ```bash
 ./mvnw clean package
 ```
 
-### 3. Run
+### 2. Start the shell
 
 ```bash
-# Interactive shell
 java -jar target/sonar-agent-1.0.0.jar
-
-# Single command
-java -jar target/sonar-agent-1.0.0.jar scan --path /path/to/your/project
 ```
 
-### 4. Compile to native binary (production)
+### 3. Select Your AI Provider
 
-Requires GraalVM with `native-image` installed.
+Pick exactly one provider before execution:
 
 ```bash
-./mvnw -Pnative native:compile
+config-select-ai --provider gemini
 ```
 
-This produces `target/ai-fix`. Move it to your PATH:
+Other valid choices:
 
 ```bash
-mv target/ai-fix /usr/local/bin/ai-fix
+config-select-ai --provider openai
+config-select-ai --provider claude
+```
+
+### 4. Store The Provider API Key
+
+Gemini:
+
+```bash
+config-set-key --provider gemini --api-key AIza...
+```
+
+OpenAI:
+
+```bash
+config-set-key --provider openai --api-key sk-...
+```
+
+Claude:
+
+```bash
+config-set-key --provider claude --api-key sk-ant-...
+```
+
+Keys are saved in `~/.aifix/config.properties` and masked by `config-show`.
+
+### 5. Optional: Override The Model
+
+```bash
+config-set-model --provider gemini --model gemini-2.5-flash
+config-set-model --provider openai --model gpt-4.1-mini
+config-set-model --provider claude --model claude-sonnet-4-20250514
+```
+
+### 6. Verify Configuration
+
+```bash
+config-show
+```
+
+Example saved config:
+
+```properties
+ai-fix.ai.provider=openai
+ai-fix.ai.openai.api-key=sk-...
+ai-fix.ai.openai.model=gpt-4.1-mini
+```
+
+---
+
+## Environment Variable Alternative
+
+You can configure the selected provider without writing `~/.aifix/config.properties`.
+
+| Setting | Environment variable |
+|---|---|
+| Selected provider | `AI_FIX_AI_PROVIDER` |
+| Gemini key | `AI_FIX_GEMINI_API_KEY`, `GEMINI_API_KEY`, or `GOOGLE_AI_API_KEY` |
+| OpenAI key | `AI_FIX_OPENAI_API_KEY` or `OPENAI_API_KEY` |
+| Claude key | `AI_FIX_CLAUDE_API_KEY` or `ANTHROPIC_API_KEY` |
+| Gemini model | `AI_FIX_GEMINI_MODEL` |
+| OpenAI model | `AI_FIX_OPENAI_MODEL` |
+| Claude model | `AI_FIX_CLAUDE_MODEL` |
+| Max output tokens | `AI_FIX_AI_MAX_OUTPUT_TOKENS` |
+| Temperature | `AI_FIX_AI_TEMPERATURE` |
+
+Example:
+
+```bash
+export AI_FIX_AI_PROVIDER=openai
+export OPENAI_API_KEY="sk-..."
+java -jar target/sonar-agent-1.0.0.jar scan --path /path/to/project
 ```
 
 ---
 
 ## Usage
 
-### `scan` — Read-only analysis
-
-Analyzes your uncommitted changes and prints a report without modifying any files.
+### `scan` - Read-only Analysis
 
 ```bash
 ai-fix scan
 ai-fix scan --path /path/to/project
 ```
 
-**Example output:**
-```
-Found 2 critical issue(s):
-
-[1] CRITICAL  SECURITY
-    File    : src/main/java/UserService.java
-    Issue   : SQL injection via string concatenation
-    Before  : String query = "SELECT * FROM users WHERE id = " + userId;
-    After   : String query = "SELECT * FROM users WHERE id = ?";
-
-[2] HIGH  CRITICAL_BUG
-    File    : src/main/java/FileProcessor.java
-    Issue   : InputStream never closed — resource leak
-    Before  : InputStream is = new FileInputStream(file);
-    After   : try (InputStream is = new FileInputStream(file)) {
-```
-
----
-
-### `fix` — Analyze and auto-apply fixes
-
-Runs the same analysis as `scan` and then applies all fixes directly to your files. Timestamped backups are created automatically (`.backup.YYYYMMDD_HHmmss`).
+### `fix` - Analyze And Apply Fixes
 
 ```bash
 ai-fix fix
 ai-fix fix --path /path/to/project
 ```
 
----
+Timestamped backups are created before edits.
 
-### `install-hook` — Attach to git pre-commit
-
-Installs a `pre-commit` hook so every `git commit` automatically runs `ai-fix fix` before allowing the commit to proceed.
+### `install-hook` - Git Pre-Commit Hook
 
 ```bash
 ai-fix install-hook
 ai-fix install-hook --path /path/to/project
 ```
 
-Alternatively, use the shell script directly:
-
-```bash
-bash install-hook.sh
-```
+The hook runs `ai-fix fix --auto` before every commit.
 
 ---
 
-### `config-set-key` — Store API key
+## Configuration Commands
 
-```bash
-ai-fix config-set-key --api-key AIza...
-```
+| Command | Purpose |
+|---|---|
+| `config-select-ai --provider <gemini\|openai\|claude>` | Select the AI provider used by future runs |
+| `config-set-key --provider <provider> --api-key <key>` | Store a provider-specific API key |
+| `config-set-model --provider <provider> --model <model>` | Override a provider's model |
+| `config-set --key <key> --value <value>` | Set any raw config property |
+| `config-show` | Show saved config with secrets masked |
 
-### `config-set` — Set any property
+The selected provider is read at execution time, so changing it affects the next `scan`, `fix`, or webhook review without rebuilding.
 
-```bash
-# Switch to a different model
-ai-fix config-set --key spring.ai.google.genai.chat.options.model --value gemini-2.5-flash
-```
+---
 
-### `config-show` — View current config
+## Review Dimensions
 
-```bash
-ai-fix config-show
-```
+The analyzer uses separate review dimensions instead of one giant prompt:
+
+| Category | Examples |
+|---|---|
+| `SECURITY` | SQL injection, XSS, SSRF, command injection, hardcoded secrets, auth bypass |
+| `CRITICAL_BUG` | Null dereferences, resource leaks, races, infinite loops, deadlocks |
+| `DATA_INTEGRITY` | Silent data loss, unsafe casts, bad transaction boundaries, off-by-one data errors |
+| `REGRESSION` | Breaking public contracts, response shape changes, incompatible defaults |
+| `PERFORMANCE` | N+1 queries, blocking hot paths, unbounded loops, avoidable quadratic work |
+| `SOLID` | Only directly visible high-risk design violations in the diff |
+
+Only `CRITICAL` and `HIGH` findings are accepted. Style, naming, and minor suggestions are intentionally ignored.
+
+---
+
+## Supported Languages
+
+Language detection is automatic from file extension:
+
+`Java`, `Kotlin`, `JavaScript`, `TypeScript`, `Python`, `Go`, `Rust`, `C#`, `PHP`, `Ruby`
 
 ---
 
 ## Docker
 
 ```bash
-# Build the image
 docker compose build
-
-# Run a scan on the current directory
 docker compose run --rm ai-fix scan
-
-# Apply fixes
 docker compose run --rm ai-fix fix
 ```
 
-The current directory is mounted as `/workspace` inside the container.
+Pass provider configuration as environment variables:
 
----
-
-## What the LLM looks for
-
-The tool instructs the LLM to flag only **CRITICAL** and **HIGH** severity issues:
-
-| Category | Examples |
-|---|---|
-| `SECURITY` | SQL injection, XSS, command injection, hardcoded secrets, path traversal, SSRF |
-| `CRITICAL_BUG` | Null pointer dereferences, resource leaks, race conditions, integer overflow |
-| `DATA_INTEGRITY` | Unsafe casting, silent data loss, off-by-one errors |
-
-Style issues, naming conventions, and minor improvements are intentionally ignored to keep the signal-to-noise ratio high.
-
----
-
-## Supported languages
-
-Language detection is automatic based on file extension:
-
-`Java` · `Kotlin` · `JavaScript` · `TypeScript` · `Python` · `Go` · `Rust` · `C#` · `PHP` · `Ruby`
-
----
-
-## Project structure
-
-```
-src/main/java/com/sonar/agent/
-├── Main.java                        # Spring Boot entry point
-├── command/
-│   ├── AnalyzeCommand.java          # scan / fix / install-hook CLI commands
-│   └── ConfigCommand.java           # config-set-key / config-show commands
-├── agent/
-│   ├── AnalyzerGraph.java           # Extract → Analyze → Format → Patch workflow
-│   ├── SystemPrompts.java           # Senior Staff Engineer LLM persona
-│   └── models/
-│       ├── DiffResult.java          # Git diff output
-│       ├── FixProposal.java         # Single LLM fix (original + fixed snippet)
-│       └── AnalysisResponse.java    # Full LLM JSON response
-├── tools/
-│   ├── GitOperationsTool.java       # Runs git diff via ProcessBuilder
-│   └── FileSystemTool.java          # Reads, backs up, and patches local files
-└── config/
-    ├── AiConfig.java                # ObjectMapper bean
-    └── AgentConfig.java             # ChatClient bean wired to Google Gemini
+```bash
+AI_FIX_AI_PROVIDER=claude \
+ANTHROPIC_API_KEY=sk-ant-... \
+docker compose run --rm ai-fix scan
 ```
 
 ---
 
-## Tech stack
+## GitHub App - Automated PR Reviews
 
-| Component | Technology |
-|---|---|
-| Language | Java 21 (Virtual Threads) |
-| Framework | Spring Boot 3.3 |
-| CLI engine | Spring Shell 3.3 |
-| AI integration | Spring AI 1.0 (Google Gemini) |
-| LLM | Gemini 2.5 Flash |
-| Build | Maven |
-| Native binary | GraalVM Native Image |
+Run ai-fix as a webhook server to automatically review pull requests.
 
----
+### 1. Configure GitHub Webhook
 
-## GitHub App — Automated PR Reviews
-
-Run ai-fix as a webhook server to automatically review every pull request.
-
-### 1. Configure a GitHub webhook
-
-In your repository (or organisation), go to **Settings → Webhooks → Add webhook** and set:
+In your repository or organization, go to **Settings -> Webhooks -> Add webhook**:
 
 | Field | Value |
 |---|---|
 | Payload URL | `https://your-server/webhook` |
 | Content type | `application/json` |
-| Secret | A random string (copy it for the next step) |
-| Events | **Pull requests** |
+| Secret | A random shared secret |
+| Events | Pull requests |
 
-### 2. Start the server
+### 2. Start The Server
+
+Example with OpenAI:
 
 ```bash
-export AI_FIX_WEBHOOK_SECRET="<the-secret-from-above>"
-export AI_FIX_WEBHOOK_GITHUB_TOKEN="ghp_..."   # PAT with pull_requests:write + contents:read
-export GOOGLE_AI_API_KEY="AIza..."
+export AI_FIX_WEBHOOK_SECRET="<webhook-secret>"
+export AI_FIX_WEBHOOK_GITHUB_TOKEN="ghp_..."
+export AI_FIX_AI_PROVIDER=openai
+export OPENAI_API_KEY="sk-..."
 
 java -jar target/sonar-agent-1.0.0.jar --spring.profiles.active=webhook
 ```
 
-Or with Docker:
+Example with Claude and Docker:
 
 ```bash
-GOOGLE_AI_API_KEY=AIza... \
+AI_FIX_AI_PROVIDER=claude \
+ANTHROPIC_API_KEY=sk-ant-... \
 AI_FIX_WEBHOOK_SECRET=mysecret \
 AI_FIX_WEBHOOK_GITHUB_TOKEN=ghp_... \
 docker compose --profile webhook up
 ```
 
-### 3. What happens on each PR
+### 3. Review Behavior
 
 | Scenario | Review posted |
 |---|---|
-| No issues found | ✅ `COMMENT` — scan passed |
-| Issues found | 🔴 `REQUEST_CHANGES` — lists every issue with before/after snippets |
+| No issues found | `COMMENT` - scan passed |
+| Issues found | `REQUEST_CHANGES` - lists every issue with before/after snippets |
 
-The server accepts `opened`, `synchronize`, and `reopened` events and ignores everything else.
+The server accepts `opened`, `synchronize`, and `reopened` events.
 
 ---
 
-## Roadmap
+## Project Structure
 
-- [x] Local CLI execution with manual triggering
-- [x] Git pre-commit hook integration
-- [x] Dynamic language detection with language-specific prompts
-- [x] Docker / docker-compose support
-- [x] GitHub App — REST API for automated PR reviews
+```text
+src/main/java/com/sonar/agent/
+├── Main.java
+├── ai/
+│   ├── AiClient.java
+│   ├── AiConfigurationStore.java
+│   ├── AiProvider.java
+│   ├── AiRuntimeConfig.java
+│   └── MultiProviderAiClient.java
+├── command/
+│   ├── AnalyzeCommand.java
+│   └── ConfigCommand.java
+├── agent/
+│   ├── AnalyzerGraph.java
+│   ├── models/
+│   └── review/
+│       ├── ReviewOrchestrator.java
+│       ├── dimension/
+│       ├── orchestration/
+│       └── prompt/
+├── tools/
+└── webhook/
+```
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|---|---|
+| Language | Java 21 |
+| Framework | Spring Boot 3.3 |
+| CLI engine | Spring Shell 3.3 |
+| AI providers | Gemini REST API, OpenAI Responses API, Anthropic Messages API |
+| JSON | Jackson |
+| Build | Maven |
+| Native binary | GraalVM Native Image |
+
+---
+
+## API References
+
+- [Gemini generateContent REST API](https://ai.google.dev/api)
+- [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses)
+- [Anthropic Messages API](https://docs.anthropic.com/en/api/messages-examples)
 
 ---
 

@@ -20,7 +20,14 @@ services:
       - ~/.aifix:/root/.aifix:ro
     working_dir: /workspace
     environment:
-      # API key from host environment
+      # Select and authenticate a provider with environment variables, or mount ~/.aifix above.
+      - AI_FIX_AI_PROVIDER=${AI_FIX_AI_PROVIDER:-}
+      - AI_FIX_GEMINI_API_KEY=${AI_FIX_GEMINI_API_KEY:-}
       - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - AI_FIX_OPENAI_API_KEY=${AI_FIX_OPENAI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - AI_FIX_CLAUDE_API_KEY=${AI_FIX_CLAUDE_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     stdin_open: true
     tty: true

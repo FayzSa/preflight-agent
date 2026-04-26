@@ -47,8 +47,9 @@ public class GitOperationsTool {
 
     public boolean isGitRepository(String directory) {
         try {
-            String output = runGitCommand(directory, "git", "rev-parse", "--is-inside-work-tree");
-            return "true".equalsIgnoreCase(output.trim());
+            String root = runGitCommand(directory, "git", "rev-parse", "--show-toplevel").trim();
+            return Paths.get(root).toAbsolutePath().normalize()
+                    .equals(Paths.get(directory).toAbsolutePath().normalize());
         } catch (Exception e) {
             return false;
         }
@@ -56,6 +57,9 @@ public class GitOperationsTool {
 
     public String getRepositoryRoot(String directory) {
         try {
+            if (!isGitRepository(directory)) {
+                return directory;
+            }
             return runGitCommand(directory, "git", "rev-parse", "--show-toplevel").trim();
         } catch (Exception e) {
             return directory;
