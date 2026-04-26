@@ -151,10 +151,17 @@ public class AnalyzeCommand {
 
     private String handleError(Exception e) {
         String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-        if (msg.contains("NOT_SET") || msg.contains("api-key") || msg.contains("401")) {
-            return red("API key not configured.\n"
-                    + "  Set it with: export GOOGLE_AI_API_KEY=\"AIza...\"\n"
-                    + "  Or run:      config-set-key --api-key <your-key>");
+        if (msg.contains("AI provider is not selected")) {
+            return red("AI provider is not selected.\n"
+                    + "  Run: config-select-ai --provider gemini\n"
+                    + "  Then: config-set-key --provider gemini --api-key <your-key>\n"
+                    + "  Supported providers: gemini, openai, claude");
+        }
+        if (msg.contains("API key is not configured") || msg.contains("api-key") || msg.contains("401")) {
+            return red("API key not configured for the selected AI provider.\n"
+                    + "  Run: config-show\n"
+                    + "  Then set a key, for example:\n"
+                    + "  config-set-key --provider openai --api-key <your-key>");
         }
         return red("Error: " + msg);
     }

@@ -37,37 +37,53 @@ class ConfigCommandTest {
 
     @Test
     void configSetApiKey_storesKeyInFile() {
-        String result = configCommand.configSetApiKey("AIzaTestKey1234");
+        String result = configCommand.configSetApiKey("gemini", "AIzaTestKey1234");
 
-        assertThat(result).contains("spring.ai.google.genai.api-key");
-        assertThat(fileContents()).contains("spring.ai.google.genai.api-key");
+        assertThat(result).contains("ai-fix.ai.gemini.api-key");
+        assertThat(fileContents()).contains("ai-fix.ai.gemini.api-key");
         assertThat(fileContents()).contains("AIzaTestKey1234");
     }
 
     @Test
-    void configSetApiKey_warnOnNonGoogleKey() {
-        String result = configCommand.configSetApiKey("sk-notAGoogleKey");
+    void configSetApiKey_warnOnSuspiciousProviderKey() {
+        String result = configCommand.configSetApiKey("claude", "sk-notClaudeKey");
 
         assertThat(result).contains("Warning");
     }
 
     @Test
+    void configSelectAi_storesSelectedProvider() {
+        String result = configCommand.configSelectAi("openai");
+
+        assertThat(result).contains("ai-fix.ai.provider");
+        assertThat(fileContents()).contains("ai-fix.ai.provider=openai");
+    }
+
+    @Test
+    void configSetModel_storesProviderModel() {
+        String result = configCommand.configSetModel("claude", "claude-sonnet-4-20250514");
+
+        assertThat(result).contains("claude-sonnet-4-20250514");
+        assertThat(fileContents()).contains("ai-fix.ai.claude.model");
+    }
+
+    @Test
     void configSet_storesArbitraryKey() {
-        String result = configCommand.configSet("spring.ai.google.genai.chat.options.model", "gemini-2.5-flash");
+        String result = configCommand.configSet("ai-fix.ai.gemini.model", "gemini-2.5-flash");
 
         assertThat(result).contains("gemini-2.5-flash");
-        assertThat(fileContents()).contains("spring.ai.google.genai.chat.options.model");
+        assertThat(fileContents()).contains("ai-fix.ai.gemini.model");
         assertThat(fileContents()).contains("gemini-2.5-flash");
     }
 
     @Test
     void configShow_displaysStoredProperties() {
-        configCommand.configSet("spring.ai.google.genai.chat.options.model", "gemini-2.5-flash");
-        configCommand.configSetApiKey("AIzaSecretKey5678");
+        configCommand.configSet("ai-fix.ai.gemini.model", "gemini-2.5-flash");
+        configCommand.configSetApiKey("gemini", "AIzaSecretKey5678");
 
         String result = configCommand.configShow();
 
-        assertThat(result).contains("spring.ai.google.genai.chat.options.model");
+        assertThat(result).contains("ai-fix.ai.gemini.model");
         assertThat(result).contains("gemini-2.5-flash");
         // API key should be masked
         assertThat(result).doesNotContain("AIzaSecretKey5678");

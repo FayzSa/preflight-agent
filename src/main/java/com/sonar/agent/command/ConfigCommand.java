@@ -1,5 +1,6 @@
 package com.sonar.agent.command;
 
+import com.sonar.agent.ai.AiProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.shell.standard.ShellComponent;
@@ -13,28 +14,60 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
- * Manages local API key storage at ~/.aifix/config.properties.
- * Values are loaded at startup via application.yml property placeholders.
+ * Manages local configuration storage at ~/.aifix/config.properties.
  */
 @ShellComponent
 public class ConfigCommand {
 
     private static final Logger log = LoggerFactory.getLogger(ConfigCommand.class);
 
-    @ShellMethod(key = "config-set-key", value = "Store your Google AI API key in ~/.aifix/config.properties")
-    public String configSetApiKey(
-            @ShellOption(value = "--api-key", help = "Google AI API key (AIza...)") String apiKey
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+
+    @ShellMethod(key = "config-select-ai", value = "Select which AI provider to use: gemini, openai, or claude")
+    public String configSelectAi(
+            @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider
     ) {
-        if (!apiKey.startsWith("AIza")) {
-            return "[33mWarning: Key does not look like a Google AI key (expected AIza...).[0m\n"
-                    + set("spring.ai.google.genai.api-key", apiKey);
+        try {
+            AiProvider selected = AiProvider.from(provider);
+            return set("ai-fix.ai.provider", selected.id());
+        } catch (IllegalArgumentException e) {
+            return red(e.getMessage());
         }
-        return set("spring.ai.google.genai.api-key", apiKey);
     }
 
-    @ShellMethod(key = "config-set", value = "Set any configuration key (e.g. --key spring.ai.google.genai.chat.options.model --value gemini-2.5-flash)")
+    @ShellMethod(key = "config-set-key", value = "Store an API key for an AI provider")
+    public String configSetApiKey(
+            @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider,
+            @ShellOption(value = "--api-key", help = "Provider API key or token") String apiKey
+    ) {
+        try {
+            AiProvider selected = AiProvider.from(provider);
+            String warning = keyWarning(selected, apiKey);
+            return warning + set("ai-fix.ai.%s.api-key".formatted(selected.id()), apiKey);
+        } catch (IllegalArgumentException e) {
+            return red(e.getMessage());
+        }
+    }
+
+    @ShellMethod(key = "config-set-model", value = "Set the model used by an AI provider")
+    public String configSetModel(
+            @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider,
+            @ShellOption(value = "--model", help = "Model name for that provider") String model
+    ) {
+        try {
+            AiProvider selected = AiProvider.from(provider);
+            return set("ai-fix.ai.%s.model".formatted(selected.id()), model);
+        } catch (IllegalArgumentException e) {
+            return red(e.getMessage());
+        }
+    }
+
+    @ShellMethod(key = "config-set", value = "Set any configuration key")
     public String configSet(
-            @ShellOption(value = "--key",   help = "Configuration property key")   String key,
+            @ShellOption(value = "--key", help = "Configuration property key") String key,
             @ShellOption(value = "--value", help = "Configuration property value") String value
     ) {
         return set(key, value);
@@ -46,7 +79,8 @@ public class ConfigCommand {
             Properties props = load();
             if (props.isEmpty()) {
                 return "No configuration saved yet.\n"
-                        + "  Use 'config-set-key --api-key <key>' to get started.";
+                        + "  Run: config-select-ai --provider gemini\n"
+                        + "  Then: config-set-key --provider gemini --api-key <key>";
             }
 
             StringBuilder sb = new StringBuilder("Saved configuration (~/.aifix/config.properties):\n");
@@ -61,12 +95,13 @@ public class ConfigCommand {
         }
     }
 
-    // ── Overridable for testing ───────────────────────────────────────────────
+    protected Path configDir() {
+        return Paths.get(System.getProperty("user.home"), ".aifix");
+    }
 
-    protected Path configDir()  { return Paths.get(System.getProperty("user.home"), ".aifix"); }
-    protected Path configFile() { return configDir().resolve("config.properties"); }
-
-    // ── Private ───────────────────────────────────────────────────────────────
+    protected Path configFile() {
+        return configDir().resolve("config.properties");
+    }
 
     private String set(String key, String value) {
         try {
@@ -74,10 +109,10 @@ public class ConfigCommand {
             props.setProperty(key, value);
             save(props);
             String display = isSecret(key) ? mask(value) : value;
-            return "[32m✓ Set " + key + " = " + display + "[0m\n"
-                    + "  Restart the application for the change to take effect.";
+            return green("Set " + key + " = " + display) + "\n"
+                    + "  This value is used on the next scan, fix, or webhook review.";
         } catch (IOException e) {
-            return "[31mFailed to save config: " + e.getMessage() + "[0m";
+            return red("Failed to save config: " + e.getMessage());
         }
     }
 
@@ -94,9 +129,21 @@ public class ConfigCommand {
     private void save(Properties props) throws IOException {
         Files.createDirectories(configDir());
         try (var writer = Files.newBufferedWriter(configFile())) {
-            props.store(writer, "ai-fix configuration — do not share this file");
+            props.store(writer, "ai-fix configuration - do not share this file");
         }
         log.debug("Config saved to {}", configFile());
+    }
+
+    private String keyWarning(AiProvider provider, String apiKey) {
+        boolean suspicious = switch (provider) {
+            case GEMINI -> !apiKey.startsWith("AIza");
+            case OPENAI -> !apiKey.startsWith("sk-");
+            case CLAUDE -> !apiKey.startsWith("sk-ant-");
+        };
+        if (!suspicious) {
+            return "";
+        }
+        return yellow("Warning: key does not look like a typical %s API key.".formatted(provider.id())) + "\n";
     }
 
     private boolean isSecret(String key) {
@@ -105,7 +152,21 @@ public class ConfigCommand {
     }
 
     private String mask(String value) {
-        if (value == null || value.length() <= 8) return "****";
+        if (value == null || value.length() <= 8) {
+            return "****";
+        }
         return value.substring(0, 7) + "..." + value.substring(value.length() - 4);
+    }
+
+    private String red(String text) {
+        return ANSI_RED + text + ANSI_RESET;
+    }
+
+    private String green(String text) {
+        return ANSI_GREEN + text + ANSI_RESET;
+    }
+
+    private String yellow(String text) {
+        return ANSI_YELLOW + text + ANSI_RESET;
     }
 }

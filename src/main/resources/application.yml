@@ -6,18 +6,6 @@ spring:
     virtual:
       enabled: true
 
-  ai:
-    google:
-      genai:
-        # Set via env var: export GOOGLE_AI_API_KEY="AIza..."
-        # Or run: config-set-key --api-key <key>  (stored in ~/.aifix/config.properties)
-        api-key: ${GOOGLE_AI_API_KEY:${SPRING_AI_GOOGLE_GENAI_API_KEY:NOT_SET}}
-        chat:
-          options:
-            model: gemini-2.5-flash
-            max-output-tokens: 8096
-            temperature: 0.1
-
   shell:
     interactive:
       enabled: true

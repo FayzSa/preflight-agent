@@ -1,9 +1,10 @@
 package com.sonar.agent;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sonar.agent.agent.AnalyzerGraph;
 import com.sonar.agent.agent.models.AnalysisResponse;
+import com.sonar.agent.agent.models.DiffResult;
 import com.sonar.agent.agent.models.FixProposal;
+import com.sonar.agent.agent.review.ReviewOrchestrator;
 import com.sonar.agent.tools.FileSystemTool;
 import com.sonar.agent.tools.GitOperationsTool;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,96 +12,78 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AnalyzerGraphTest {
 
-    @Mock ChatClient chatClient;
-    @Mock ChatClient.ChatClientRequestSpec requestSpec;
-    @Mock ChatClient.CallResponseSpec responseSpec;
     @Mock GitOperationsTool gitTool;
     @Mock FileSystemTool fileSystemTool;
+    @Mock ReviewOrchestrator reviewOrchestrator;
 
     AnalyzerGraph analyzerGraph;
-    ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        analyzerGraph = new AnalyzerGraph(chatClient, gitTool, fileSystemTool, objectMapper);
+        analyzerGraph = new AnalyzerGraph(gitTool, fileSystemTool, reviewOrchestrator);
     }
 
     @Test
     void analyze_returnsEmptyResponse_whenNoDiff() {
         when(gitTool.getUncommittedChanges(anyString()))
-                .thenReturn(new com.sonar.agent.agent.models.DiffResult("", List.of()));
+                .thenReturn(new DiffResult("", List.of()));
 
         AnalysisResponse response = analyzerGraph.analyze("/some/repo");
 
         assertThat(response.hasIssues()).isFalse();
-        verifyNoInteractions(chatClient);
+        verifyNoInteractions(reviewOrchestrator);
     }
 
     @Test
-    void analyze_parsesLlmResponseCorrectly() {
-        var diff = new com.sonar.agent.agent.models.DiffResult(
+    void analyze_delegatesDiffToReviewOrchestrator() {
+        var diff = new DiffResult(
                 "+String query = \"SELECT * FROM users WHERE id = \" + userId;",
-                List.of(new com.sonar.agent.agent.models.DiffResult.FileDiff(
+                List.of(new DiffResult.FileDiff(
                         "UserService.java",
                         "+String query = \"SELECT * FROM users WHERE id = \" + userId;"
                 ))
         );
 
-        String llmJson = """
-                {
-                  "issues": [{
-                    "filename": "UserService.java",
-                    "original_snippet": "String query = \\"SELECT * FROM users WHERE id = \\" + userId;",
-                    "fixed_snippet": "String query = \\"SELECT * FROM users WHERE id = ?\\";",
-                    "issue_description": "SQL injection vulnerability via string concatenation",
-                    "severity": "CRITICAL",
-                    "category": "SECURITY"
-                  }]
-                }
-                """;
+        FixProposal issue = new FixProposal(
+                "UserService.java",
+                "String query = \"SELECT * FROM users WHERE id = \" + userId;",
+                "String query = \"SELECT * FROM users WHERE id = ?\";",
+                "SQL injection vulnerability via string concatenation",
+                "CRITICAL",
+                "SECURITY"
+        );
 
         when(gitTool.getUncommittedChanges(anyString())).thenReturn(diff);
-        when(chatClient.prompt()).thenReturn(requestSpec);
-        when(requestSpec.system(anyString())).thenReturn(requestSpec);
-        when(requestSpec.user(anyString())).thenReturn(requestSpec);
-        when(requestSpec.call()).thenReturn(responseSpec);
-        when(responseSpec.content()).thenReturn(llmJson);
+        when(reviewOrchestrator.review(diff)).thenReturn(new AnalysisResponse(List.of(issue)));
 
         AnalysisResponse response = analyzerGraph.analyze("/some/repo");
 
         assertThat(response.hasIssues()).isTrue();
-        assertThat(response.issues()).hasSize(1);
-
-        FixProposal issue = response.issues().get(0);
-        assertThat(issue.severity()).isEqualTo("CRITICAL");
-        assertThat(issue.category()).isEqualTo("SECURITY");
-        assertThat(issue.filename()).isEqualTo("UserService.java");
+        assertThat(response.issues()).containsExactly(issue);
+        verify(reviewOrchestrator).review(diff);
     }
 
     @Test
-    void analyze_returnsEmptyResponse_whenLlmReturnsNoIssues() {
-        var diff = new com.sonar.agent.agent.models.DiffResult(
+    void analyze_returnsEmptyResponse_whenOrchestratorReturnsNoIssues() {
+        var diff = new DiffResult(
                 "+int x = 1;",
-                List.of(new com.sonar.agent.agent.models.DiffResult.FileDiff("Main.java", "+int x = 1;"))
+                List.of(new DiffResult.FileDiff("Main.java", "+int x = 1;"))
         );
 
         when(gitTool.getUncommittedChanges(anyString())).thenReturn(diff);
-        when(chatClient.prompt()).thenReturn(requestSpec);
-        when(requestSpec.system(anyString())).thenReturn(requestSpec);
-        when(requestSpec.user(anyString())).thenReturn(requestSpec);
-        when(requestSpec.call()).thenReturn(responseSpec);
-        when(responseSpec.content()).thenReturn("{\"issues\":[]}");
+        when(reviewOrchestrator.review(diff)).thenReturn(new AnalysisResponse(List.of()));
 
         AnalysisResponse response = analyzerGraph.analyze("/some/repo");
 
