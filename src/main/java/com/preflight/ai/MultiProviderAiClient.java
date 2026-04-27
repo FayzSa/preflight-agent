@@ -155,7 +155,8 @@ public class MultiProviderAiClient implements AiClient {
 
         request.set("generationConfig", objectMapper.createObjectNode()
             .put("temperature", config.temperature())
-            .put("maxOutputTokens", config.maxOutputTokens()));
+            .put("maxOutputTokens", config.maxOutputTokens())
+            .put("thinking_level", "high"));
         return request;
     }
 
