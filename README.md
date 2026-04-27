@@ -62,8 +62,8 @@ Add an alias to your shell profile (~/.bashrc or ~/.zshrc)
 
 
 ```bash
-echo 'alias ai-fix="java -jar /absolute/path/to/target/preflight-agent-1.0.0.jar"' >> ~/.zshrc
-source ~/.zshrc```
+echo 'alias ai-fix="java -jar /absolute/path/to/target/preflight-agent-1.0.0.jar"' >> ~/.bashrc
+source ~/.bashrc```
 ```
 ###### Windows (PowerShell)
 Open your PowerShell profile (notepad $PROFILE) and add this function:
