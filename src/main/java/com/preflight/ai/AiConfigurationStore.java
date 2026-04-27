@@ -112,7 +112,7 @@ public class AiConfigurationStore {
     private String defaultModel(AiProvider provider) {
         return switch (provider) {
             case GEMINI -> "gemini-2.5-flash";
-            case GEMMA -> "gemma-4-27b-it";
+            case GEMMA -> "gemma-4-31b-it";
             case OPENAI -> "gpt-4.1-mini";
             case CLAUDE -> "claude-sonnet-4-20250514";
         };
