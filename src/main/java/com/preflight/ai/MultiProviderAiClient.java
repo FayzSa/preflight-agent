@@ -35,6 +35,7 @@ public class MultiProviderAiClient implements AiClient {
         AiRuntimeConfig config = configurationStore.loadRuntimeConfig();
         return switch (config.provider()) {
             case GEMINI -> callGemini(config, systemPrompt, userMessage);
+            case GEMMA -> callGemma(config, systemPrompt, userMessage);
             case OPENAI -> callOpenAi(config, systemPrompt, userMessage);
             case CLAUDE -> callClaude(config, systemPrompt, userMessage);
         };
@@ -48,6 +49,25 @@ public class MultiProviderAiClient implements AiClient {
             .uri("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", model)
             .header("x-goog-api-key", config.apiKey())
             .body(buildGeminiRequest(config, systemPrompt, userMessage))
+            .retrieve()
+            .body(String.class);
+
+        JsonNode root = readTree(response);
+        JsonNode parts = root.path("candidates").path(0).path(CONTENT_FIELD_NAME).path(PARTS_FIELD_NAME);
+        if (parts.isArray() && !parts.isEmpty()) {
+            return parts.get(0).path("text").asText();
+        }
+        return "";
+    }
+
+    private String callGemma(AiRuntimeConfig config, String systemPrompt, String userMessage) {
+        String model = config.model().startsWith("models/")
+            ? config.model().substring("models/".length())
+            : config.model();
+        String response = restClient.post()
+            .uri("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", model)
+            .header("x-goog-api-key", config.apiKey())
+            .body(buildGemmaRequest(config, systemPrompt, userMessage))
             .retrieve()
             .body(String.class);
 
@@ -119,6 +139,23 @@ public class MultiProviderAiClient implements AiClient {
             .put("temperature", config.temperature())
             .put("maxOutputTokens", config.maxOutputTokens())
             .put("responseMimeType", "application/json"));
+        return request;
+    }
+
+    private ObjectNode buildGemmaRequest(AiRuntimeConfig config, String systemPrompt, String userMessage) {
+        ObjectNode request = objectMapper.createObjectNode();
+        request.set("systemInstruction", objectMapper.createObjectNode()
+            .set("parts", textParts(systemPrompt)));
+
+        ArrayNode contents = objectMapper.createArrayNode();
+        contents.add(objectMapper.createObjectNode()
+            .put("role", "user")
+            .set("parts", textParts(userMessage)));
+        request.set("contents", contents);
+
+        request.set("generationConfig", objectMapper.createObjectNode()
+            .put("temperature", config.temperature())
+            .put("maxOutputTokens", config.maxOutputTokens()));
         return request;
     }
 

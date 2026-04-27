@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 public enum AiProvider {
     GEMINI("gemini"),
+    GEMMA("gemma"),
     OPENAI("openai"),
     CLAUDE("claude");
 
@@ -22,6 +23,6 @@ public enum AiProvider {
             .filter(provider -> provider.id.equalsIgnoreCase(value))
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException(
-                "Unsupported AI provider '%s'. Choose one of: gemini, openai, claude.".formatted(value)));
+                "Unsupported AI provider '%s'. Choose one of: gemini, gemma, openai, claude.".formatted(value)));
     }
 }
