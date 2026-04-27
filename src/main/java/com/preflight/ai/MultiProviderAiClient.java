@@ -5,16 +5,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+
+import java.util.function.Supplier;
 
 @Component
 public class MultiProviderAiClient implements AiClient {
 
+    private static final Logger log = LoggerFactory.getLogger(MultiProviderAiClient.class);
     private static final String ANTHROPIC_VERSION = "2023-06-01";
     private static final String CONTENT_FIELD_NAME = "content";
     private static final String PARTS_FIELD_NAME = "parts";
+    private static final int MAX_RETRIES = 4;
+    private static final long DEFAULT_RETRY_DELAY_MS = 10_000;
 
     private final AiConfigurationStore configurationStore;
     private final ObjectMapper objectMapper;
@@ -46,12 +54,12 @@ public class MultiProviderAiClient implements AiClient {
         String model = config.model().startsWith("models/")
             ? config.model().substring("models/".length())
             : config.model();
-        String response = restClient.post()
+        String response = callWithRetry(() -> restClient.post()
             .uri("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", model)
             .header("x-goog-api-key", config.apiKey())
             .body(buildGeminiRequest(config, systemPrompt, userMessage))
             .retrieve()
-            .body(String.class);
+            .body(String.class));
 
         JsonNode root = readTree(response);
         JsonNode parts = root.path("candidates").path(0).path(CONTENT_FIELD_NAME).path(PARTS_FIELD_NAME);
@@ -65,12 +73,12 @@ public class MultiProviderAiClient implements AiClient {
         String model = config.model().startsWith("models/")
             ? config.model().substring("models/".length())
             : config.model();
-        String response = restClient.post()
+        String response = callWithRetry(() -> restClient.post()
             .uri("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", model)
             .header("x-goog-api-key", config.apiKey())
             .body(buildGemmaRequest(config, systemPrompt, userMessage))
             .retrieve()
-            .body(String.class);
+            .body(String.class));
 
         JsonNode root = readTree(response);
         JsonNode parts = root.path("candidates").path(0).path(CONTENT_FIELD_NAME).path(PARTS_FIELD_NAME);
@@ -81,12 +89,12 @@ public class MultiProviderAiClient implements AiClient {
     }
 
     private String callOpenAi(AiRuntimeConfig config, String systemPrompt, String userMessage) {
-        String response = restClient.post()
+        String response = callWithRetry(() -> restClient.post()
             .uri("https://api.openai.com/v1/responses")
             .header("Authorization", "Bearer " + config.apiKey())
             .body(buildOpenAiRequest(config, systemPrompt, userMessage))
             .retrieve()
-            .body(String.class);
+            .body(String.class));
 
         JsonNode root = readTree(response);
         String outputText = root.path("output_text").asText(null);
@@ -107,13 +115,13 @@ public class MultiProviderAiClient implements AiClient {
     }
 
     private String callClaude(AiRuntimeConfig config, String systemPrompt, String userMessage) {
-        String response = restClient.post()
+        String response = callWithRetry(() -> restClient.post()
             .uri("https://api.anthropic.com/v1/messages")
             .header("x-api-key", config.apiKey())
             .header("anthropic-version", ANTHROPIC_VERSION)
             .body(buildClaudeRequest(config, systemPrompt, userMessage))
             .retrieve()
-            .body(String.class);
+            .body(String.class));
 
         JsonNode root = readTree(response);
         StringBuilder text = new StringBuilder();
@@ -123,6 +131,42 @@ public class MultiProviderAiClient implements AiClient {
             }
         }
         return text.toString();
+    }
+
+    private String callWithRetry(Supplier<String> call) {
+        for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return call.get();
+            } catch (HttpClientErrorException e) {
+                if (e.getStatusCode().value() != 429 || attempt == MAX_RETRIES) {
+                    throw e;
+                }
+                long delayMs = parseRetryDelayMs(e.getResponseBodyAsString());
+                log.warn("Rate limit hit (429), retrying in {}ms (attempt {}/{})", delayMs, attempt + 1, MAX_RETRIES);
+                try {
+                    Thread.sleep(delayMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted during rate limit backoff", ie);
+                }
+            }
+        }
+        throw new IllegalStateException("Unreachable");
+    }
+
+    private long parseRetryDelayMs(String responseBody) {
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            for (JsonNode detail : root.path("error").path("details")) {
+                String retryDelay = detail.path("retryDelay").asText(null);
+                if (retryDelay != null && retryDelay.endsWith("s")) {
+                    double seconds = Double.parseDouble(retryDelay.substring(0, retryDelay.length() - 1));
+                    return (long) (seconds * 1000) + 1000;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return DEFAULT_RETRY_DELAY_MS;
     }
 
     private ObjectNode buildGeminiRequest(AiRuntimeConfig config, String systemPrompt, String userMessage) {
