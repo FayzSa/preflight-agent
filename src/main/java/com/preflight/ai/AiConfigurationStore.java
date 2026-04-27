@@ -28,7 +28,7 @@ public class AiConfigurationStore {
                     AI provider is not selected.
                     Run: config-select-ai --provider gemini
                     Then set its key: config-set-key --provider gemini --api-key <key>
-                    Supported providers: gemini, openai, claude.
+                    Supported providers: gemini, gemma, openai, claude.
                     """);
             }
 
@@ -93,6 +93,11 @@ public class AiConfigurationStore {
                 System.getenv("GEMINI_API_KEY"),
                 System.getenv("GOOGLE_AI_API_KEY")
             );
+            case GEMMA -> firstNonBlank(
+                System.getenv("AI_FIX_GEMMA_API_KEY"),
+                System.getenv("GEMMA_API_KEY"),
+                System.getenv("GOOGLE_AI_API_KEY")
+            );
             case OPENAI -> firstNonBlank(
                 System.getenv("AI_FIX_OPENAI_API_KEY"),
                 System.getenv("OPENAI_API_KEY")
@@ -107,6 +112,7 @@ public class AiConfigurationStore {
     private String defaultModel(AiProvider provider) {
         return switch (provider) {
             case GEMINI -> "gemini-2.5-flash";
+            case GEMMA -> "gemma-4-31b-it";
             case OPENAI -> "gpt-4.1-mini";
             case CLAUDE -> "claude-sonnet-4-20250514";
         };
