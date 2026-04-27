@@ -2,13 +2,14 @@
 
 ai-fix scans your uncommitted Git changes before you commit, asks the selected AI provider to look for high-impact issues, and can apply the proposed fixes directly to your local files.
 
-It supports three AI providers:
+It supports four AI providers:
 
-| Provider | CLI id | Default model |
-|---|---|---|
-| Google Gemini | `gemini` | `gemini-2.5-flash` |
-| OpenAI | `openai` | `gpt-4.1-mini` |
-| Anthropic Claude | `claude` | `claude-sonnet-4-20250514` |
+| Provider | CLI id | Default model | Free tier |
+|---|---|---|---|
+| Google Gemini | `gemini` | `gemini-2.5-flash` | Yes (rate limited) |
+| Google Gemma | `gemma` | `gemma-4-31b-it` | Yes (free of charge) |
+| OpenAI | `openai` | `gpt-4.1-mini` | No |
+| Anthropic Claude | `claude` | `claude-sonnet-4-20250514` | No |
 
 You must select one provider and configure its API key before running `scan`, `fix`, or webhook reviews.
 
@@ -34,7 +35,7 @@ If no critical or high severity issues are found, the process exits cleanly.
 | Maven | 3.9+ |
 | Git | Any modern version |
 | GraalVM | 21+, native image only |
-| AI API key | Gemini, OpenAI, or Claude |
+| AI API key | Gemini, Gemma, OpenAI, or Claude |
 
 ---
 
@@ -81,17 +82,24 @@ Reload your profile by running . $PROFILE.
 Pick exactly one provider before execution:
 
 ```bash
-ai-fix config-select-ai --provider gemini
+ai-fix config-select-ai --provider gemma
 ```
 
 Other valid choices:
 
 ```bash
+ai-fix config-select-ai --provider gemini
 ai-fix config-select-ai --provider openai
 ai-fix config-select-ai --provider claude
 ```
 
 ### 4. Store The Provider API Key
+
+Gemma (uses a Google AI Studio key — free of charge):
+
+```bash
+ai-fix config-set-key --provider gemma --api-key AIza...
+```
 
 Gemini:
 
@@ -116,6 +124,7 @@ Keys are saved in `~/.aifix/config.properties` and masked by `config-show`.
 ### 5. Optional: Override The Model
 
 ```bash
+ai-fix config-set-model --provider gemma --model gemma-4-31b-it
 ai-fix config-set-model --provider gemini --model gemini-2.5-flash
 ai-fix config-set-model --provider openai --model gpt-4.1-mini
 ai-fix config-set-model --provider claude --model claude-sonnet-4-20250514
@@ -130,9 +139,9 @@ ai-fix config-show
 Example saved config:
 
 ```properties
-ai-fix.ai.provider=openai
-ai-fix.ai.openai.api-key=sk-...
-ai-fix.ai.openai.model=gpt-4.1-mini
+ai-fix.ai.provider=gemma
+ai-fix.ai.gemma.api-key=AIza...
+ai-fix.ai.gemma.model=gemma-4-31b-it
 ```
 
 ---
@@ -145,9 +154,11 @@ You can configure the selected provider without writing `~/.aifix/config.propert
 |---|---|
 | Selected provider | `AI_FIX_AI_PROVIDER` |
 | Gemini key | `AI_FIX_GEMINI_API_KEY`, `GEMINI_API_KEY`, or `GOOGLE_AI_API_KEY` |
+| Gemma key | `AI_FIX_GEMMA_API_KEY`, `GEMMA_API_KEY`, or `GOOGLE_AI_API_KEY` |
 | OpenAI key | `AI_FIX_OPENAI_API_KEY` or `OPENAI_API_KEY` |
 | Claude key | `AI_FIX_CLAUDE_API_KEY` or `ANTHROPIC_API_KEY` |
 | Gemini model | `AI_FIX_GEMINI_MODEL` |
+| Gemma model | `AI_FIX_GEMMA_MODEL` |
 | OpenAI model | `AI_FIX_OPENAI_MODEL` |
 | Claude model | `AI_FIX_CLAUDE_MODEL` |
 | Max output tokens | `AI_FIX_AI_MAX_OUTPUT_TOKENS` |
@@ -156,8 +167,8 @@ You can configure the selected provider without writing `~/.aifix/config.propert
 Example:
 
 ```bash
-export AI_FIX_AI_PROVIDER=openai
-export OPENAI_API_KEY="sk-..."
+export AI_FIX_AI_PROVIDER=gemma
+export GEMMA_API_KEY="AIza..."
 ai-fix scan --path /path/to/project
 ```
 
@@ -196,7 +207,7 @@ The hook runs `ai-fix fix --auto` before every commit.
 
 | Command | Purpose |
 |---|---|
-| `config-select-ai --provider <gemini\|openai\|claude>` | Select the AI provider used by future runs |
+| `config-select-ai --provider <gemini\|gemma\|openai\|claude>` | Select the AI provider used by future runs |
 | `config-set-key --provider <provider> --api-key <key>` | Store a provider-specific API key |
 | `config-set-model --provider <provider> --model <model>` | Override a provider's model |
 | `config-set --key <key> --value <value>` | Set any raw config property |
@@ -242,8 +253,8 @@ docker compose run --rm ai-fix fix
 Pass provider configuration as environment variables:
 
 ```bash
-AI_FIX_AI_PROVIDER=claude \
-ANTHROPIC_API_KEY=sk-ant-... \
+AI_FIX_AI_PROVIDER=gemma \
+GEMMA_API_KEY=AIza... \
 docker compose run --rm ai-fix scan
 ```
 
@@ -266,13 +277,13 @@ In your repository or organization, go to **Settings -> Webhooks -> Add webhook*
 
 ### 2. Start The Server
 
-Example with OpenAI:
+Example with Gemma (free):
 
 ```bash
 export AI_FIX_WEBHOOK_SECRET="<webhook-secret>"
 export AI_FIX_WEBHOOK_GITHUB_TOKEN="ghp_..."
-export AI_FIX_AI_PROVIDER=openai
-export OPENAI_API_KEY="sk-..."
+export AI_FIX_AI_PROVIDER=gemma
+export GEMMA_API_KEY="AIza..."
 
 java -jar target/preflight-agent-1.0.0.jar --spring.profiles.active=webhook
 ```
@@ -307,7 +318,7 @@ The server accepts `opened`, `synchronize`, and `reopened` events.
 | Language | Java 21 |
 | Framework | Spring Boot 3.3 |
 | CLI engine | Spring Shell 3.3 |
-| AI providers | Gemini REST API, OpenAI Responses API, Anthropic Messages API |
+| AI providers | Gemini REST API, Gemma REST API, OpenAI Responses API, Anthropic Messages API |
 | JSON | Jackson |
 | Build | Maven |
 | Native binary | GraalVM Native Image |
@@ -316,6 +327,7 @@ The server accepts `opened`, `synchronize`, and `reopened` events.
 
 ## API References
 
+- [Gemma model overview](https://ai.google.dev/gemma/docs/gemma-4)
 - [Gemini generateContent REST API](https://ai.google.dev/api)
 - [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses)
 - [Anthropic Messages API](https://docs.anthropic.com/en/api/messages-examples)

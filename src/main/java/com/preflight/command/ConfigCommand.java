@@ -27,9 +27,9 @@ public class ConfigCommand {
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
 
-    @ShellMethod(key = "config-select-ai", value = "Select which AI provider to use: gemini, openai, or claude")
+    @ShellMethod(key = "config-select-ai", value = "Select which AI provider to use: gemini, gemma, openai, or claude")
     public String configSelectAi(
-        @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider
+        @ShellOption(value = "--provider", help = "AI provider: gemini, gemma, openai, or claude") String provider
     ) {
         try {
             AiProvider selected = AiProvider.from(provider);
@@ -41,7 +41,7 @@ public class ConfigCommand {
 
     @ShellMethod(key = "config-set-key", value = "Store an API key for an AI provider")
     public String configSetApiKey(
-        @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider,
+        @ShellOption(value = "--provider", help = "AI provider: gemini, gemma, openai, or claude") String provider,
         @ShellOption(value = "--api-key", help = "Provider API key or token") String apiKey
     ) {
         try {
@@ -55,7 +55,7 @@ public class ConfigCommand {
 
     @ShellMethod(key = "config-set-model", value = "Set the model used by an AI provider")
     public String configSetModel(
-        @ShellOption(value = "--provider", help = "AI provider: gemini, openai, or claude") String provider,
+        @ShellOption(value = "--provider", help = "AI provider: gemini, gemmma, openai, or claude") String provider,
         @ShellOption(value = "--model", help = "Model name for that provider") String model
     ) {
         try {
@@ -136,7 +136,7 @@ public class ConfigCommand {
 
     private String keyWarning(AiProvider provider, String apiKey) {
         boolean suspicious = switch (provider) {
-            case GEMINI -> !apiKey.startsWith("AIza");
+            case GEMINI, GEMMA -> !apiKey.startsWith("AIza");
             case OPENAI -> !apiKey.startsWith("sk-");
             case CLAUDE -> !apiKey.startsWith("sk-ant-");
         };
