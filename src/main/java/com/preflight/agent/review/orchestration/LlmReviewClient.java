@@ -52,23 +52,26 @@ public class LlmReviewClient {
             int start = response.indexOf("```json") + 7;
             int end = response.lastIndexOf("```");
             if (end > start) {
-                return response.substring(start, end).trim();
+                return findJsonObject(response.substring(start, end));
             }
         }
         if (response.contains("```")) {
             int start = response.indexOf("```") + 3;
             int end = response.lastIndexOf("```");
             if (end > start) {
-                return response.substring(start, end).trim();
+                return findJsonObject(response.substring(start, end));
             }
         }
 
-        int start = response.indexOf('{');
-        int end = response.lastIndexOf('}');
-        if (start >= 0 && end > start) {
-            return response.substring(start, end + 1);
-        }
+        return findJsonObject(response);
+    }
 
-        return response.trim();
+    private String findJsonObject(String text) {
+        int start = text.indexOf('{');
+        int end = text.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return text.trim();
     }
 }
